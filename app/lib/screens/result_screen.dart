@@ -10,7 +10,7 @@ class ResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Appraisal Result')),
+      appBar: AppBar(title: const Text('估价结果')),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -23,17 +23,17 @@ class ResultScreen extends StatelessWidget {
             Text('${device.storage}GB',
                 style: const TextStyle(fontSize: 16, color: Colors.grey)),
             const SizedBox(height: 32),
-            const Text('Appraisal Range:',
+            const Text('建议收机价格',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            _buildPriceRow('Min', result.min, Colors.orange),
+            _buildPriceRow('保守价', result.min, Colors.orange),
             const SizedBox(height: 8),
-            _buildPriceRow('Mid', result.mid, Colors.green, large: true),
+            _buildPriceRow('参考价', result.mid, Colors.green, large: true),
             const SizedBox(height: 8),
-            _buildPriceRow('Max', result.max, Colors.blue),
+            _buildPriceRow('最高价', result.max, Colors.blue),
             const SizedBox(height: 32),
             const Text(
-              'This is a reference price. Adjust based on actual condition.',
+              '此价格仅供收机参考，请结合实机检测、当地行情和利润空间调整。',
               style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
             const Spacer(),
@@ -42,7 +42,7 @@ class ResultScreen extends StatelessWidget {
               height: 48,
               child: ElevatedButton(
                 onPressed: () => Navigator.popUntil(context, (r) => r.isFirst),
-                child: const Text('New Appraisal'),
+                child: const Text('继续估下一台'),
               ),
             ),
           ],

@@ -30,26 +30,26 @@ class _ConditionScreenState extends State<ConditionScreen> {
   bool _loading = false;
 
   static const _appearances = {
-    'excellent': 'Excellent',
-    'good': 'Good',
-    'fair': 'Fair',
-    'poor': 'Poor',
-    'junk': 'Junk',
+    'excellent': '近乎全新',
+    'good': '轻微使用',
+    'fair': '明显划痕',
+    'poor': '磕碰严重',
+    'junk': '战斗成色',
   };
 
   static const _functionalOptions = {
-    'non_original_screen': 'Non-original screen',
-    'screen_cracked': 'Screen cracked',
-    'screen_burn_in': 'Screen burn-in',
-    'no_power': 'Cannot power on',
-    'liquid_damage': 'Liquid damage',
-    'repaired': 'Previously repaired',
+    'non_original_screen': '更换过非原装屏',
+    'screen_cracked': '屏幕破裂',
+    'screen_burn_in': '烧屏、亮点或显示异常',
+    'no_power': '无法正常开机',
+    'liquid_damage': '进液或泡水',
+    'repaired': '有拆修记录',
   };
 
   static const _accessories = {
-    'complete': 'Complete (box + charger + invoice)',
-    'partial': 'Partial',
-    'none': 'None',
+    'complete': '包装、充电器、发票齐全',
+    'partial': '部分配件',
+    'none': '无配件',
   };
 
   Future<void> _submit() async {
@@ -78,7 +78,7 @@ class _ConditionScreenState extends State<ConditionScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Appraisal failed')),
+        const SnackBar(content: Text('估价失败，请检查网络后重试')),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -88,13 +88,13 @@ class _ConditionScreenState extends State<ConditionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Device Condition')),
+      appBar: AppBar(title: const Text('选择手机成色')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Appearance',
+            const Text('外观成色',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Wrap(
@@ -108,7 +108,7 @@ class _ConditionScreenState extends State<ConditionScreen> {
               }).toList(),
             ),
             const SizedBox(height: 24),
-            const Text('Functional Issues',
+            const Text('功能和维修情况（可多选）',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             ..._functionalOptions.entries.map((e) {
@@ -127,7 +127,7 @@ class _ConditionScreenState extends State<ConditionScreen> {
               );
             }),
             const SizedBox(height: 24),
-            const Text('Accessories',
+            const Text('配件情况',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             RadioGroup<String>(
@@ -152,7 +152,7 @@ class _ConditionScreenState extends State<ConditionScreen> {
                 onPressed: _loading ? null : _submit,
                 child: _loading
                     ? const CircularProgressIndicator()
-                    : const Text('Appraise'),
+                    : const Text('开始估价'),
               ),
             ),
           ],

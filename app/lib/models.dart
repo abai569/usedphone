@@ -25,6 +25,15 @@ class Device {
       basePrice: (json['base_price'] as num).toDouble(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'brand': brand,
+        'model': model,
+        'storage': storage,
+        'launch_year': launchYear,
+        'base_price': basePrice,
+      };
 }
 
 class AppraisalResult {

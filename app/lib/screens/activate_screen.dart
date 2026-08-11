@@ -42,7 +42,7 @@ class _ActivateScreenState extends State<ActivateScreen> {
 
   Future<void> _activate() async {
     if (_codeController.text.trim().isEmpty) {
-      setState(() => _error = 'Please enter activation code');
+      setState(() => _error = '请输入激活码');
       return;
     }
 
@@ -70,12 +70,12 @@ class _ActivateScreenState extends State<ActivateScreen> {
         widget.apiClient.setLicenseToken(result.token);
         _goToCapture();
       } else if (result.isActive) {
-        setState(() => _error = 'Invalid activation response');
+        setState(() => _error = '服务器返回的激活信息不完整');
       } else {
-        setState(() => _error = result.error ?? 'Activation failed');
+        setState(() => _error = _activationError(result.error));
       }
     } catch (e) {
-      setState(() => _error = 'Network error');
+      setState(() => _error = '网络连接失败，请检查网络后重试');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -85,31 +85,40 @@ class _ActivateScreenState extends State<ActivateScreen> {
     Navigator.pushReplacementNamed(context, '/capture');
   }
 
+  String _activationError(String? error) {
+    return switch (error) {
+      'invalid_code' => '激活码不存在',
+      'expired' => '激活码已过期',
+      'already_bound' => '激活码已绑定其他设备',
+      _ => '激活失败，请重试',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Activate License')),
+      appBar: AppBar(title: const Text('授权激活')),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text(
-              'Enter Activation Code',
+              '请输入激活码',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             TextField(
               controller: _codeController,
               decoration: InputDecoration(
-                labelText: 'Activation Code',
+                labelText: '激活码',
                 border: const OutlineInputBorder(),
                 errorText: _error,
               ),
             ),
             const SizedBox(height: 16),
             if (_expiresAt != null)
-              Text('Valid until: ${_expiresAt!.substring(0, 10)}'),
+              Text('有效期至：${_expiresAt!.substring(0, 10)}'),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -118,7 +127,7 @@ class _ActivateScreenState extends State<ActivateScreen> {
                 onPressed: _loading ? null : _activate,
                 child: _loading
                     ? const CircularProgressIndicator()
-                    : const Text('Activate'),
+                    : const Text('立即激活'),
               ),
             ),
           ],

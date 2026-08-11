@@ -5,6 +5,6 @@ void main() {
   testWidgets('App renders', (WidgetTester tester) async {
     await tester.pumpWidget(const UsedPhoneApp());
     await tester.pumpAndSettle();
-    expect(find.text('Activate License'), findsOneWidget);
+    expect(find.text('授权激活'), findsOneWidget);
   });
 }
