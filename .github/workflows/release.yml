@@ -26,6 +26,26 @@ jobs:
           [[ "${API_BASE_URL}" == https://* ]] || { echo "API_BASE_URL must start with https://"; exit 1; }
         env:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
+      - name: Restore release keystore
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          test -n "$KEYSTORE_PASSWORD"
+          test -n "$KEY_ALIAS"
+          test -n "$KEY_PASSWORD"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/key.p12
+          cat > android/key.properties <<EOF
+          storeFile=key.p12
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          storeType=pkcs12
+          EOF
       - run: flutter build apk --release --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
       - name: Rename APK
         shell: bash
