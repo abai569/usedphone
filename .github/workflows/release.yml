@@ -1,0 +1,26 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build apk --release --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: app/build/app/outputs/flutter-apk/app-release.apk
