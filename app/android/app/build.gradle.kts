@@ -12,6 +12,11 @@ val signingProperties = Properties()
 if (signingPropertiesFile.exists()) {
     signingProperties.load(FileInputStream(signingPropertiesFile))
 }
+val storeFilePath = signingProperties.getProperty("storeFile")
+val storePasswordValue = signingProperties.getProperty("storePassword")
+val keyAliasValue = signingProperties.getProperty("keyAlias")
+val keyPasswordValue = signingProperties.getProperty("keyPassword")
+val storeTypeValue = signingProperties.getProperty("storeType", "pkcs12")
 
 android {
     namespace = "com.usedphone.usedphone"
@@ -37,11 +42,17 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.create("release") {
-                storeFile = rootProject.file(signingProperties["storeFile"] as String? ?: "")
-                storePassword = signingProperties["storePassword"] as String?
-                keyAlias = signingProperties["keyAlias"] as String?
-                keyPassword = signingProperties["keyPassword"] as String?
-                storeType = signingProperties["storeType"] as String? ?: "pkcs12"
+                require(!storeFilePath.isNullOrBlank()) { "Missing storeFile in android/key.properties" }
+                require(!storePasswordValue.isNullOrBlank()) { "Missing storePassword in android/key.properties" }
+                require(!keyAliasValue.isNullOrBlank()) { "Missing keyAlias in android/key.properties" }
+                require(!keyPasswordValue.isNullOrBlank()) { "Missing keyPassword in android/key.properties" }
+                val keystoreFile = rootProject.file(storeFilePath!!)
+                require(keystoreFile.exists()) { "Keystore not found: ${keystoreFile.absolutePath}" }
+                storeFile = keystoreFile
+                storePassword = storePasswordValue
+                keyAlias = keyAliasValue
+                keyPassword = keyPasswordValue
+                storeType = storeTypeValue
             }
         }
     }

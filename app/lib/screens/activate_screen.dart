@@ -24,15 +24,19 @@ class _ActivateScreenState extends State<ActivateScreen> {
   }
 
   Future<void> _checkActivation() async {
-    final prefs = await SharedPreferences.getInstance();
-    final expiresAt = prefs.getString('expires_at');
-    if (expiresAt != null) {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final expiresAt = prefs.getString('expires_at');
+      final licenseToken = prefs.getString('license_token');
+      if (!mounted || expiresAt == null || licenseToken == null) return;
       final expiry = DateTime.tryParse(expiresAt);
       if (expiry != null && expiry.isAfter(DateTime.now())) {
-        widget.apiClient.setLicenseToken(prefs.getString('license_token'));
+        widget.apiClient.setLicenseToken(licenseToken);
         setState(() => _expiresAt = expiresAt);
         _goToCapture();
       }
+    } catch (_) {
+      // Start in the activation form when local storage is unavailable.
     }
   }
 
@@ -60,18 +64,20 @@ class _ActivateScreenState extends State<ActivateScreen> {
         deviceKey,
       );
 
-      if (result.isActive) {
+      if (result.isActive && result.expiresAt != null && result.token != null) {
         await prefs.setString('expires_at', result.expiresAt!);
         await prefs.setString('license_token', result.token!);
         widget.apiClient.setLicenseToken(result.token);
         _goToCapture();
+      } else if (result.isActive) {
+        setState(() => _error = 'Invalid activation response');
       } else {
         setState(() => _error = result.error ?? 'Activation failed');
       }
     } catch (e) {
       setState(() => _error = 'Network error');
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
