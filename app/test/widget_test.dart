@@ -4,6 +4,7 @@ import 'package:usedphone/main.dart';
 void main() {
   testWidgets('App renders', (WidgetTester tester) async {
     await tester.pumpWidget(const UsedPhoneApp());
+    await tester.pumpAndSettle();
     expect(find.text('Activate License'), findsOneWidget);
   });
 }
