@@ -20,6 +20,12 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      - name: Validate API URL
+        shell: bash
+        run: |
+          [[ "${API_BASE_URL}" == https://* ]] || { echo "API_BASE_URL must start with https://"; exit 1; }
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
       - run: flutter build apk --release --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
       - uses: actions/upload-artifact@v4
         with:
