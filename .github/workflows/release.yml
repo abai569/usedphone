@@ -27,6 +27,9 @@ jobs:
         env:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
       - run: flutter build apk --release --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
+      - name: Rename APK
+        shell: bash
+        run: mv build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/flutter-apk/usedphone-${GITHUB_REF_NAME}.apk"
       - uses: softprops/action-gh-release@v2
         with:
-          files: app/build/app/outputs/flutter-apk/app-release.apk
+          files: app/build/app/outputs/flutter-apk/usedphone-${{ github.ref_name }}.apk
