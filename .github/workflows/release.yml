@@ -38,14 +38,17 @@ jobs:
           test -n "$KEYSTORE_PASSWORD"
           test -n "$KEY_ALIAS"
           test -n "$KEY_PASSWORD"
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/key.p12
-          cat > android/key.properties <<EOF
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/app/key.p12
+          test -s android/app/key.p12
+          cat > android/app/key.properties <<EOF
           storeFile=key.p12
           storePassword=$KEYSTORE_PASSWORD
           keyAlias=$KEY_ALIAS
           keyPassword=$KEY_PASSWORD
           storeType=pkcs12
           EOF
+          test -s android/app/key.properties
+          grep -q '^storeFile=key.p12$' android/app/key.properties
       - run: flutter build apk --release --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
       - name: Rename APK
         shell: bash

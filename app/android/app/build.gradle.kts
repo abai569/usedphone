@@ -7,7 +7,7 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-val signingPropertiesFile = rootProject.file("key.properties")
+val signingPropertiesFile = project.file("key.properties")
 val signingProperties = Properties()
 if (signingPropertiesFile.exists()) {
     signingProperties.load(FileInputStream(signingPropertiesFile))
@@ -46,7 +46,7 @@ android {
                 require(!storePasswordValue.isNullOrBlank()) { "Missing storePassword in android/key.properties" }
                 require(!keyAliasValue.isNullOrBlank()) { "Missing keyAlias in android/key.properties" }
                 require(!keyPasswordValue.isNullOrBlank()) { "Missing keyPassword in android/key.properties" }
-                val keystoreFile = rootProject.file(storeFilePath!!)
+                val keystoreFile = project.file(storeFilePath!!)
                 require(keystoreFile.exists()) { "Keystore not found: ${keystoreFile.absolutePath}" }
                 storeFile = keystoreFile
                 storePassword = storePasswordValue
