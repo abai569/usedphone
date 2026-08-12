@@ -28,17 +28,59 @@ class _UsedPhoneAppState extends State<UsedPhoneApp> {
   @override
   Widget build(BuildContext context) {
     final apiClient = widget.apiClient ?? ApiClient(baseUrl: widget.baseUrl);
+    final baseTheme = ThemeData(
+      colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+      useMaterial3: true,
+    );
     return MaterialApp(
-          title: 'UsedPhone',
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-            useMaterial3: true,
+      title: 'UsedPhone',
+      theme: baseTheme.copyWith(
+        inputDecorationTheme: const InputDecorationTheme(
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(64, 52),
+            textStyle: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          initialRoute: '/activate',
-          routes: {
-            '/activate': (context) => ActivateScreen(apiClient: apiClient),
-            '/capture': (context) => CaptureScreen(apiClient: apiClient),
-          },
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(64, 52),
+            textStyle: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            minimumSize: const Size(64, 48),
+            textStyle: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        listTileTheme: const ListTileThemeData(
+          minTileHeight: 60,
+          titleTextStyle: TextStyle(fontSize: 18, color: Colors.black87),
+          subtitleTextStyle: TextStyle(fontSize: 16, color: Colors.black54),
+        ),
+      ),
+      initialRoute: '/activate',
+      builder: (context, child) => MediaQuery.withClampedTextScaling(
+        minScaleFactor: 1.15,
+        maxScaleFactor: 1.8,
+        child: child!,
+      ),
+      routes: {
+        '/activate': (context) => ActivateScreen(apiClient: apiClient),
+        '/capture': (context) => CaptureScreen(apiClient: apiClient),
+      },
     );
   }
 }
