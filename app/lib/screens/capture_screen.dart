@@ -44,6 +44,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
   String? _selectedBrand;
   String? _selectedModel;
   int? _selectedStorage;
+  String? _selectedSearchResult;
 
   @override
   void initState() {
@@ -63,18 +64,62 @@ class _CaptureScreenState extends State<CaptureScreen> {
         ..sort((a, b) => (_brandNames[a] ?? a).compareTo(_brandNames[b] ?? b));
 
   List<String> get _models {
-    final query = _searchController.text.trim().toLowerCase();
     final models =
         _devices
             .where((d) => d.brand == _selectedBrand)
             .map((d) => d.model)
             .toSet()
-            .where(
-              (model) => query.isEmpty || model.toLowerCase().contains(query),
-            )
             .toList()
           ..sort();
     return models;
+  }
+
+  String _normalizeSearchText(String value) =>
+      value.toLowerCase().replaceAll(RegExp(r'[\s\-_（）()]'), '');
+
+  List<({String brand, String model})> get _modelSearchResults {
+    final query = _normalizeSearchText(_searchController.text.trim());
+    if (query.isEmpty) return const [];
+    final results = <String, ({String brand, String model})>{};
+    for (final device in _devices) {
+      final brandName = _brandNames[device.brand] ?? device.brand;
+      final searchable = _normalizeSearchText(
+        '${device.brand} $brandName ${device.model}',
+      );
+      if (searchable.contains(query)) {
+        results['${device.brand}\u0000${device.model}'] = (
+          brand: device.brand,
+          model: device.model,
+        );
+      }
+    }
+    final matches = results.values.toList()
+      ..sort((a, b) {
+        final brandOrder = (_brandNames[a.brand] ?? a.brand).compareTo(
+          _brandNames[b.brand] ?? b.brand,
+        );
+        return brandOrder != 0 ? brandOrder : a.model.compareTo(b.model);
+      });
+    return matches;
+  }
+
+  void _selectSearchResult(String? value) {
+    if (value == null) return;
+    final parts = value.split('\u0000');
+    if (parts.length != 2) return;
+    final brand = parts[0];
+    final model = parts[1];
+    final storages = _devices
+        .where((device) => device.brand == brand && device.model == model)
+        .map((device) => device.storage)
+        .toSet()
+        .toList();
+    setState(() {
+      _selectedSearchResult = value;
+      _selectedBrand = brand;
+      _selectedModel = model;
+      _selectedStorage = storages.length == 1 ? storages.single : null;
+    });
   }
 
   List<int> get _storages {
@@ -526,6 +571,56 @@ class _CaptureScreenState extends State<CaptureScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      labelText: '直接搜索型号',
+                      hintText: '例如：K40、Mate 60、iPhone 15',
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (_) => setState(() {
+                      _selectedSearchResult = null;
+                      _selectedBrand = null;
+                      _selectedModel = null;
+                      _selectedStorage = null;
+                    }),
+                  ),
+                  if (_searchController.text.trim().isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      key: ValueKey(_searchController.text),
+                      initialValue:
+                          _modelSearchResults.any(
+                            (result) =>
+                                '${result.brand}\u0000${result.model}' ==
+                                _selectedSearchResult,
+                          )
+                          ? _selectedSearchResult
+                          : null,
+                      menuMaxHeight: 320,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: _modelSearchResults.isEmpty
+                            ? '没有找到匹配机型'
+                            : '搜索结果（${_modelSearchResults.length}）',
+                        border: const OutlineInputBorder(),
+                      ),
+                      items: _modelSearchResults
+                          .map(
+                            (result) => DropdownMenuItem(
+                              value: '${result.brand}\u0000${result.model}',
+                              child: Text(
+                                '${_brandNames[result.brand] ?? result.brand} · ${result.model}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: _selectSearchResult,
+                    ),
+                  ],
+                  const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _selectedBrand,
                     menuMaxHeight: 320,
@@ -549,29 +644,13 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       _selectedBrand = brand;
                       _selectedModel = null;
                       _selectedStorage = null;
+                      _selectedSearchResult = null;
                       _searchController.clear();
                     }),
                   ),
                   const SizedBox(height: 12),
-                  TextField(
-                    controller: _searchController,
-                    enabled: _selectedBrand != null,
-                    decoration: const InputDecoration(
-                      labelText: '搜索型号',
-                      hintText: '例如：Mate 60、iPhone 15、K70',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (_) => setState(() {
-                      _selectedModel = null;
-                      _selectedStorage = null;
-                    }),
-                  ),
-                  const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    key: ValueKey(
-                      Object.hash(_selectedBrand, _searchController.text),
-                    ),
+                    key: ValueKey(_selectedBrand),
                     initialValue: _models.contains(_selectedModel)
                         ? _selectedModel
                         : null,
