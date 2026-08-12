@@ -62,6 +62,7 @@ class _ActivateScreenState extends State<ActivateScreen> {
         _codeController.text.trim(),
         deviceKey,
       );
+      if (!mounted) return;
 
       if (result.isActive && result.expiresAt != null && result.token != null) {
         await prefs.setString('expires_at', result.expiresAt!);
@@ -80,6 +81,7 @@ class _ActivateScreenState extends State<ActivateScreen> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       await showAppMessage(
         context,
         title: '网络连接失败',

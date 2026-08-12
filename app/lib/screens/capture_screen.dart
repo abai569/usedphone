@@ -474,8 +474,6 @@ class _CaptureScreenState extends State<CaptureScreen> {
       );
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
         await showAppMessage(
           context,
           title: '旧机估价失败',
@@ -535,12 +533,19 @@ class _CaptureScreenState extends State<CaptureScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              ...models.map(
-                (model) => RadioListTile<String>(
-                  title: Text(model.toString()),
-                  value: model.toString(),
-                  groupValue: selected,
-                  onChanged: (value) => setDialogState(() => selected = value),
+              RadioGroup<String>(
+                groupValue: selected,
+                onChanged: (value) => setDialogState(() => selected = value),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: models
+                      .map(
+                        (model) => RadioListTile<String>(
+                          title: Text(model.toString()),
+                          value: model.toString(),
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
             ],
