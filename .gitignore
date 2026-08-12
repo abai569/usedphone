@@ -1,4 +1,5 @@
 __pycache__
+.gitignore
 *.pyc
 .env
 .venv
@@ -19,3 +20,4 @@ docker-compose.yml
 usedphone.db
 closed/
 catalog.json
+AGENTS.md
