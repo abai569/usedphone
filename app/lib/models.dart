@@ -36,6 +36,17 @@ class Device {
       };
 }
 
+String recognitionNoticeMessage(
+  String brandName,
+  Device device, {
+  required bool hasMultipleMatches,
+}) {
+  final capacity = device.storage == 0 ? '容量：未识别' : '容量：${device.storage}GB';
+  final priceType = device.storage == 0 ? '\n价格类型：通用机型参考价' : '';
+  final selection = hasMultipleMatches ? '\n请继续选择准确容量' : '';
+  return '$brandName ${device.model}\n$capacity\n回收参考价：¥${device.basePrice.toStringAsFixed(0)}$priceType$selection';
+}
+
 class AppraisalResult {
   final double min;
   final double mid;

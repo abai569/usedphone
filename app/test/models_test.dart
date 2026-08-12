@@ -28,4 +28,20 @@ void main() {
     expect(result.suggestion?['model'], '小米 17');
     expect(result.suggestion?['storages'], [256, 512]);
   });
+
+  test('recognition notice includes generic reference price', () {
+    final device = Device(
+      id: 1,
+      brand: 'Xiaomi',
+      model: 'K40 Pro',
+      storage: 0,
+      launchYear: 2021,
+      basePrice: 680,
+    );
+
+    expect(
+      recognitionNoticeMessage('小米', device, hasMultipleMatches: false),
+      '小米 K40 Pro\n容量：未识别\n回收参考价：¥680\n价格类型：通用机型参考价',
+    );
+  });
 }

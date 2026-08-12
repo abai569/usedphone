@@ -274,16 +274,15 @@ class _CaptureScreenState extends State<CaptureScreen> {
                 ? match.storage
                 : null;
           });
-          final storageText = match.storage == 0
-              ? '通用价格'
-              : '${match.storage}GB';
           await _showRecognitionNotice(
             icon: Icons.check_circle,
             color: Colors.green,
             title: '识别成功',
-            message: matchingDevices.length == 1
-                ? '${_brandNames[match.brand] ?? match.brand} ${match.model}\n$storageText'
-                : '${_brandNames[match.brand] ?? match.brand} ${match.model}\n请选择容量',
+            message: recognitionNoticeMessage(
+              _brandNames[match.brand] ?? match.brand,
+              match,
+              hasMultipleMatches: matchingDevices.length > 1,
+            ),
           );
           return;
         }
@@ -308,6 +307,20 @@ class _CaptureScreenState extends State<CaptureScreen> {
           color: Colors.orange,
           title: '暂无匹配价格',
           message: '识别到 $brand $models\n价格库暂无该机型，请手动选择。',
+        );
+        return;
+      }
+      if (result.status == 'ambiguous' && result.suggestion != null) {
+        final brand = result.suggestion!['brand'] ?? '';
+        final models =
+            (result.suggestion!['models'] as List<dynamic>? ?? const []).join(
+              '、',
+            );
+        await _showRecognitionNotice(
+          icon: Icons.help_outline,
+          color: Colors.orange,
+          title: '系列识别成功',
+          message: '识别到 $brand 系列：$models\n外观无法区分具体版本，请手动确认型号。',
         );
         return;
       }
