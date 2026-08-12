@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_client.dart';
+import '../app_dialog.dart';
 
 class ActivateScreen extends StatefulWidget {
   final ApiClient apiClient;
@@ -14,7 +15,6 @@ class ActivateScreen extends StatefulWidget {
 class _ActivateScreenState extends State<ActivateScreen> {
   final _codeController = TextEditingController();
   bool _loading = false;
-  String? _error;
   String? _expiresAt;
 
   @override
@@ -42,13 +42,12 @@ class _ActivateScreenState extends State<ActivateScreen> {
 
   Future<void> _activate() async {
     if (_codeController.text.trim().isEmpty) {
-      setState(() => _error = '请输入激活码');
+      await showAppMessage(context, title: '请输入激活码', message: '激活码不能为空。');
       return;
     }
 
     setState(() {
       _loading = true;
-      _error = null;
     });
 
     try {
@@ -70,12 +69,24 @@ class _ActivateScreenState extends State<ActivateScreen> {
         widget.apiClient.setLicenseToken(result.token);
         _goToCapture();
       } else if (result.isActive) {
-        setState(() => _error = '服务器返回的激活信息不完整');
+        await showAppMessage(context, title: '激活失败', message: '服务器返回的激活信息不完整。');
       } else {
-        setState(() => _error = _activationError(result.error));
+        await showAppMessage(
+          context,
+          title: '激活失败',
+          message: _activationError(result.error),
+          icon: Icons.error_outline,
+          color: Colors.red,
+        );
       }
     } catch (e) {
-      setState(() => _error = '网络连接失败，请检查网络后重试');
+      await showAppMessage(
+        context,
+        title: '网络连接失败',
+        message: '请检查网络后重试。',
+        icon: Icons.error_outline,
+        color: Colors.red,
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -113,7 +124,6 @@ class _ActivateScreenState extends State<ActivateScreen> {
               decoration: InputDecoration(
                 labelText: '激活码',
                 border: const OutlineInputBorder(),
-                errorText: _error,
               ),
             ),
             const SizedBox(height: 16),

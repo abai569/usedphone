@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api_client.dart';
+import '../app_dialog.dart';
 import '../models.dart';
 import 'condition_screen.dart';
 
@@ -167,9 +168,13 @@ class _CaptureScreenState extends State<CaptureScreen> {
       if (mounted) _applyDevices(devices, prefs.getInt('recent_device_id'));
     } catch (_) {
       if (mounted && _devices.isEmpty) {
-        ScaffoldMessenger.of(
+        await showAppMessage(
           context,
-        ).showSnackBar(const SnackBar(content: Text('机型库加载失败，请检查网络')));
+          title: '机型库加载失败',
+          message: '请检查网络后重试。',
+          icon: Icons.error_outline,
+          color: Colors.red,
+        );
       }
     }
   }
@@ -236,9 +241,11 @@ class _CaptureScreenState extends State<CaptureScreen> {
 
   Future<void> _recognize() async {
     if (_frontImage == null || _backImage == null) {
-      ScaffoldMessenger.of(
+      await showAppMessage(
         context,
-      ).showSnackBar(const SnackBar(content: Text('请先拍摄手机正面和背面')));
+        title: '还缺少照片',
+        message: '请先拍摄手机正面和背面。',
+      );
       return;
     }
 
@@ -312,16 +319,25 @@ class _CaptureScreenState extends State<CaptureScreen> {
       }
       if (result.status == 'ambiguous' && result.suggestion != null) {
         final brand = result.suggestion!['brand'] ?? '';
-        final models =
-            (result.suggestion!['models'] as List<dynamic>? ?? const []).join(
-              '、',
-            );
-        await _showRecognitionNotice(
-          icon: Icons.help_outline,
-          color: Colors.orange,
-          title: '系列识别成功',
-          message: '识别到 $brand 系列：$models\n外观无法区分具体版本，请手动确认型号。',
+        final selectedModel = await _chooseRecognizedModel(
+          brand,
+          result.suggestion!['models'] as List<dynamic>? ?? const [],
         );
+        if (selectedModel == null || !mounted) return;
+        final matchingDevices = _devices
+            .where((device) => device.brand == brand && device.model == selectedModel)
+            .toList();
+        if (matchingDevices.isEmpty) return;
+        final selected = matchingDevices.firstWhere(
+          (device) => device.storage == 0,
+          orElse: () => matchingDevices.first,
+        );
+        setState(() {
+          _selectedBrand = brand;
+          _selectedModel = selectedModel;
+          _selectedStorage = selected.storage;
+        });
+        await _next();
         return;
       }
       if (result.status == 'unavailable') {
@@ -460,7 +476,13 @@ class _CaptureScreenState extends State<CaptureScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('旧机兜底估价暂不可用，请稍后重试')));
+        await showAppMessage(
+          context,
+          title: '旧机估价失败',
+          message: '暂不可用，请稍后重试。',
+          icon: Icons.error_outline,
+          color: Colors.red,
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -470,9 +492,11 @@ class _CaptureScreenState extends State<CaptureScreen> {
   Future<void> _next() async {
     final device = _selectedDevice;
     if (device == null) {
-      ScaffoldMessenger.of(
+      await showAppMessage(
         context,
-      ).showSnackBar(const SnackBar(content: Text('请选择品牌、型号和容量')));
+        title: '信息不完整',
+        message: '请选择品牌、型号和容量。',
+      );
       return;
     }
     final prefs = await SharedPreferences.getInstance();
@@ -486,6 +510,50 @@ class _CaptureScreenState extends State<CaptureScreen> {
           device: device,
           frontImage: _frontImage,
           backImage: _backImage,
+        ),
+      ),
+    );
+  }
+
+  Future<String?> _chooseRecognizedModel(
+    String brand,
+    List<dynamic> models,
+  ) async {
+    String? selected;
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          icon: const Icon(Icons.help_outline, color: Colors.orange, size: 56),
+          title: const Text('请确认具体型号', textAlign: TextAlign.center),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '识别到 ${_brandNames[brand] ?? brand} 系列\n外观无法区分具体版本，请选择型号。',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              ...models.map(
+                (model) => RadioListTile<String>(
+                  title: Text(model.toString()),
+                  value: model.toString(),
+                  groupValue: selected,
+                  onChanged: (value) => setDialogState(() => selected = value),
+                ),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            FilledButton(
+              onPressed: selected == null
+                  ? null
+                  : () => Navigator.pop(context, selected),
+              child: const Text('确定'),
+            ),
+          ],
         ),
       ),
     );

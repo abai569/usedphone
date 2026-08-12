@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api_client.dart';
+import '../app_dialog.dart';
 import '../models.dart';
 import 'result_screen.dart';
 
@@ -77,8 +78,12 @@ class _ConditionScreenState extends State<ConditionScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('估价失败，请检查网络后重试')),
+      await showAppMessage(
+        context,
+        title: '估价失败',
+        message: '请检查网络后重试。',
+        icon: Icons.error_outline,
+        color: Colors.red,
       );
     } finally {
       if (mounted) setState(() => _loading = false);
