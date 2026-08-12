@@ -128,13 +128,40 @@ class _CaptureScreenState extends State<CaptureScreen> {
   }
 
   Future<void> _pickFront() async {
-    final file = await _picker.pickImage(source: ImageSource.camera, imageQuality: 50, maxWidth: 1200);
+    final source = await _pickImageSource();
+    if (source == null) return;
+    final file = await _picker.pickImage(source: source, imageQuality: 40, maxWidth: 800);
     if (file != null && mounted) setState(() => _frontImage = File(file.path));
   }
 
   Future<void> _pickBack() async {
-    final file = await _picker.pickImage(source: ImageSource.camera, imageQuality: 50, maxWidth: 1200);
+    final source = await _pickImageSource();
+    if (source == null) return;
+    final file = await _picker.pickImage(source: source, imageQuality: 40, maxWidth: 800);
     if (file != null && mounted) setState(() => _backImage = File(file.path));
+  }
+
+  Future<ImageSource?> _pickImageSource() async {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('拍照'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('从相册选择'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _recognize() async {
