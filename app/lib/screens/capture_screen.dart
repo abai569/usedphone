@@ -293,10 +293,42 @@ class _CaptureScreenState extends State<CaptureScreen> {
     );
   }
 
+  Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('退出激活'),
+        content: const Text('退出后需要重新输入激活码才能继续使用。'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('退出', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('license_token');
+    await prefs.remove('expires_at');
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/activate');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('二手手机估价')),
+      appBar: AppBar(
+        title: const Text('二手手机估价'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: '退出激活',
+            onPressed: _logout,
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
