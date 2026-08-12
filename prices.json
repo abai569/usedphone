@@ -1,42 +1,42 @@
 [
   {
     "brand": "Apple",
-    "model": "7",
+    "model": "iPhone 7",
     "storage": 0,
     "launch_year": 2024,
     "base_price": 102
   },
   {
     "brand": "Apple",
-    "model": "7 Plus",
+    "model": "iPhone 7 Plus",
     "storage": 0,
     "launch_year": 2024,
     "base_price": 144
   },
   {
     "brand": "Apple",
-    "model": "8",
+    "model": "iPhone 8",
     "storage": 0,
     "launch_year": 2024,
     "base_price": 240
   },
   {
     "brand": "Apple",
-    "model": "8 Plus",
+    "model": "iPhone 8 Plus",
     "storage": 0,
     "launch_year": 2024,
     "base_price": 270
   },
   {
     "brand": "Apple",
-    "model": "X",
+    "model": "iPhone X",
     "storage": 0,
     "launch_year": 2024,
     "base_price": 300
   },
   {
     "brand": "Apple",
-    "model": "XS",
+    "model": "iPhone XS",
     "storage": 0,
     "launch_year": 2024,
     "base_price": 360
