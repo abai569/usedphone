@@ -128,12 +128,12 @@ class _CaptureScreenState extends State<CaptureScreen> {
   }
 
   Future<void> _pickFront() async {
-    final file = await _picker.pickImage(source: ImageSource.camera);
+    final file = await _picker.pickImage(source: ImageSource.camera, imageQuality: 50, maxWidth: 1200);
     if (file != null && mounted) setState(() => _frontImage = File(file.path));
   }
 
   Future<void> _pickBack() async {
-    final file = await _picker.pickImage(source: ImageSource.camera);
+    final file = await _picker.pickImage(source: ImageSource.camera, imageQuality: 50, maxWidth: 1200);
     if (file != null && mounted) setState(() => _backImage = File(file.path));
   }
 
