@@ -50,23 +50,38 @@ class ApiClient {
     }
   }
 
-  Future<RecognizeResult> recognize(List<int> imageBytes, String filename) async {
+  Future<RecognizeResult> recognize(
+    List<int> frontImageBytes,
+    String frontFilename,
+    List<int> backImageBytes,
+    String backFilename,
+  ) async {
     final request = MultipartRequest('POST', Uri.parse('$baseUrl/recognize'))
       ..headers.addAll(_authHeaders);
     request.files.add(MultipartFile.fromBytes(
-      'photo',
-      imageBytes,
-      filename: filename,
+      'front_photo',
+      frontImageBytes,
+      filename: frontFilename,
+    ));
+    request.files.add(MultipartFile.fromBytes(
+      'back_photo',
+      backImageBytes,
+      filename: backFilename,
     ));
 
     final streamedResponse = await _client.send(request);
     final response = await Response.fromStream(streamedResponse);
 
-    if (response.statusCode == 200) {
-      return RecognizeResult.fromJson(jsonDecode(response.body));
-    } else {
-      throw Exception('Failed to recognize');
+    Map<String, dynamic>? data;
+    try {
+      data = jsonDecode(response.body) as Map<String, dynamic>;
+    } on FormatException {
+      data = null;
     }
+    if (data != null && (response.statusCode == 200 || data['status'] != null)) {
+      return RecognizeResult.fromJson(data);
+    }
+    throw Exception('Failed to recognize');
   }
 
   Future<AppraisalResult> appraise({
@@ -98,6 +113,19 @@ class ApiClient {
     } else {
       throw Exception('Failed to appraise');
     }
+  }
+
+  Future<AppraisalResult> fallbackAppraise(String state) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/fallback-appraise'),
+      headers: {'Content-Type': 'application/json', ..._authHeaders},
+      body: jsonEncode({'state': state}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to appraise old phone');
+    }
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return AppraisalResult.fromJson(data['result']);
   }
 
   void close() {

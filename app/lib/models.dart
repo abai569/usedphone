@@ -73,14 +73,17 @@ class ActivationResult {
 }
 
 class RecognizeResult {
+  final String status;
   final bool recognized;
   final Map<String, dynamic>? suggestion;
 
-  RecognizeResult({required this.recognized, this.suggestion});
+  RecognizeResult({required this.status, required this.recognized, this.suggestion});
 
   factory RecognizeResult.fromJson(Map<String, dynamic> json) {
+    final recognized = json['recognized'] as bool? ?? false;
     return RecognizeResult(
-      recognized: json['recognized'] as bool,
+      status: json['status'] as String? ?? (recognized ? 'exact' : 'unknown'),
+      recognized: recognized,
       suggestion: json['suggestion'] as Map<String, dynamic>?,
     );
   }

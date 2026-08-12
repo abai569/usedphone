@@ -150,31 +150,118 @@ class _CaptureScreenState extends State<CaptureScreen> {
       final result = await widget.apiClient.recognize(
         await _frontImage!.readAsBytes(),
         'front.jpg',
+        await _backImage!.readAsBytes(),
+        'back.jpg',
       );
       if (!mounted) return;
-      if (result.recognized && result.suggestion != null) {
-        final id = result.suggestion!['device_id'];
-        final matches = _devices.where((device) => device.id == id);
+      if (result.status == 'candidate' && result.suggestion != null) {
+        final brand = result.suggestion!['brand'];
+        final model = result.suggestion!['model'];
+        final matches = _devices.where((device) => device.brand == brand && device.model == model);
         if (matches.isNotEmpty) {
           final match = matches.first;
+          final matchingDevices = matches.toList();
           setState(() {
             _selectedBrand = match.brand;
             _selectedModel = match.model;
-            _selectedStorage = match.storage;
+            _selectedStorage = matchingDevices.length == 1 ? match.storage : null;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('已识别：${_brandNames[match.brand] ?? match.brand} ${match.model} ${match.storage}GB')),
+            SnackBar(
+              content: Text(
+                matchingDevices.length == 1
+                    ? '已识别：${_brandNames[match.brand] ?? match.brand} ${match.model} ${match.storage}GB'
+                    : '已识别：${_brandNames[match.brand] ?? match.brand} ${match.model}，请选择容量',
+              ),
+            ),
           );
           return;
         }
       }
+      if (result.status == 'disabled') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('智能识别尚未配置，请手动选择机型')),
+        );
+        return;
+      }
+      if (result.status == 'unmatched' && result.suggestion != null) {
+        final brand = result.suggestion!['brand'] ?? '';
+        final models = (result.suggestion!['models'] as List<dynamic>? ?? const []).join('、');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('识别到 $brand $models，但价格库暂无该机型')),
+        );
+        return;
+      }
+      if (result.status == 'unavailable') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('智能识别服务暂不可用，请稍后重试')),
+        );
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('暂未识别成功，请手动选择机型')),
+        const SnackBar(content: Text('无法确认具体型号，请手动选择或拍摄机身型号标签')),
       );
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('智能识别暂不可用，请手动选择机型')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _fallbackAppraise() async {
+    const states = <String, String>{
+      'working': '可开机，基本功能正常',
+      'working_faulty': '可开机，但碎屏或有明显故障',
+      'no_power': '无法开机，外观基本完整',
+      'severe_damage': '严重破损、进水或拆修',
+    };
+    final state = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(
+              title: Text('选择旧机状态', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text('仅用于无法确认机型或没有可靠行情的设备'),
+            ),
+            ...states.entries.map(
+              (entry) => ListTile(
+                title: Text(entry.value),
+                onTap: () => Navigator.pop(context, entry.key),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (state == null || !mounted) return;
+    setState(() => _loading = true);
+    try {
+      final result = await widget.apiClient.fallbackAppraise(state);
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('旧机兜底估价'),
+          content: Text(
+            '${states[state]}\n\n建议收购范围：¥${result.min.toStringAsFixed(0)} - ¥${result.max.toStringAsFixed(0)}\n'
+            '参考中位价：¥${result.mid.toStringAsFixed(0)}\n\n'
+            '该报价仅用于无可靠型号或行情的旧机，最高不超过 200 元。',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('知道了')),
+          ],
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('旧机兜底估价暂不可用，请稍后重试')),
         );
       }
     } finally {
@@ -228,6 +315,12 @@ class _CaptureScreenState extends State<CaptureScreen> {
               icon: const Icon(Icons.auto_awesome),
               label: Text(_loading ? '正在识别...' : '智能识别机型'),
             ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _loading ? null : _fallbackAppraise,
+            icon: const Icon(Icons.recycling),
+            label: const Text('老旧机/无法开机兜底估价'),
           ),
           const SizedBox(height: 24),
           const Text('手动选择机型', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
