@@ -18,3 +18,4 @@ docker-compose.yml
 .dockerignore
 usedphone.db
 closed/
+catalog.json
