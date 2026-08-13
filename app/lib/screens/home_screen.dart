@@ -93,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 await prefs.setString('license_token', result.token!);
                 await prefs.setString('expires_at', result.expiresAt!);
                 widget.apiClient.setLicenseToken(result.token);
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 await _loadAuthorization();
               } catch (_) {
