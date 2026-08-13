@@ -12,8 +12,11 @@ import 'condition_screen.dart';
 
 class CaptureScreen extends StatefulWidget {
   final ApiClient apiClient;
+  final bool smartOnly;
+  final bool manualOnly;
+  final bool fallbackOnly;
 
-  const CaptureScreen({super.key, required this.apiClient});
+  const CaptureScreen({super.key, required this.apiClient, this.smartOnly = false, this.manualOnly = false, this.fallbackOnly = false});
 
   @override
   State<CaptureScreen> createState() => _CaptureScreenState();
@@ -217,23 +220,27 @@ class _CaptureScreenState extends State<CaptureScreen> {
   }
 
   Future<ImageSource?> _pickImageSource() async {
-    return showModalBottomSheet<ImageSource>(
+    return showDialog<ImageSource>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('拍照'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('从相册选择'),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
-            ),
-          ],
+        child: AlertDialog(
+          title: const Text('选择照片来源', textAlign: TextAlign.center),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('拍照'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('从相册选择'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -249,7 +256,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
       return;
     }
 
-    setState(() {
+           setState(() {
       _loading = true;
       _recognizing = true;
     });
@@ -277,11 +284,20 @@ class _CaptureScreenState extends State<CaptureScreen> {
           setState(() {
             _selectedBrand = match.brand;
             _selectedModel = match.model;
-            _selectedStorage = matchingDevices.length == 1
-                ? match.storage
-                : null;
-          });
-          await _showRecognitionNotice(
+             _selectedStorage = matchingDevices.length == 1
+                 ? match.storage
+                 : null;
+           });
+           if (widget.smartOnly) {
+             final appearance = result.suggestion?['appearance'] as String? ?? 'good';
+             final smartDevice = matchingDevices.firstWhere(
+               (device) => device.storage == 0,
+               orElse: () => match,
+             );
+             await _smartAppraise(smartDevice, appearance);
+             return;
+           }
+           await _showRecognitionNotice(
             icon: Icons.check_circle,
             color: Colors.green,
             title: '识别成功',
@@ -337,7 +353,12 @@ class _CaptureScreenState extends State<CaptureScreen> {
           _selectedModel = selectedModel;
           _selectedStorage = selected.storage;
         });
-        await _next();
+        if (widget.smartOnly) {
+          final appearance = result.suggestion?['appearance'] as String? ?? 'good';
+          await _smartAppraise(selected, appearance);
+        } else {
+          await _next();
+        }
         return;
       }
       if (result.status == 'unavailable') {
@@ -375,6 +396,35 @@ class _CaptureScreenState extends State<CaptureScreen> {
           _recognizing = false;
         });
       }
+    }
+  }
+
+  Future<void> _smartAppraise(Device device, String appearance) async {
+    setState(() => _loading = true);
+    try {
+      final result = await widget.apiClient.appraise(
+        deviceId: device.id,
+        storage: device.storage,
+        appearance: appearance,
+        functionalIssues: const ['no_power'],
+        accessory: 'none',
+        deviceKey: (await SharedPreferences.getInstance()).getString('device_key') ?? '',
+      );
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('AI 智能估价', textAlign: TextAlign.center),
+          content: Text('机型：${_brandNames[device.brand] ?? device.brand} ${device.model}\n\n回收参考价：¥${result.mid.toStringAsFixed(0)}', textAlign: TextAlign.center),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('确定'))],
+        ),
+      );
+    } catch (_) {
+      if (mounted) await showAppMessage(context, title: '估价失败', message: '请检查网络后重试。', icon: Icons.error_outline, color: Colors.red);
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -427,19 +477,15 @@ class _CaptureScreenState extends State<CaptureScreen> {
       'no_power': '无法开机，外观基本完整',
       'severe_damage': '严重破损、进水或拆修',
     };
-    final state = await showModalBottomSheet<String>(
+    final state = await showDialog<String>(
       context: context,
-      builder: (context) => SafeArea(
-        child: Column(
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('选择旧机状态', textAlign: TextAlign.center),
+        content: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const ListTile(
-              title: Text(
-                '选择旧机状态',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text('仅用于无法确认机型或没有可靠行情的设备'),
-            ),
             ...states.entries.map(
               (entry) => ListTile(
                 title: Text(entry.value),
@@ -447,6 +493,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -613,7 +660,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                 controller: _scrollController,
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Row(
+                   if (!widget.manualOnly && !widget.fallbackOnly) Row(
                     children: [
                       Expanded(
                         child: _PhotoBox(
@@ -633,7 +680,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  SizedBox(
+                   if (!widget.manualOnly && !widget.fallbackOnly) SizedBox(
                     height: 48,
                     child: ElevatedButton.icon(
                       onPressed: _loading ? null : _recognize,
@@ -642,13 +689,13 @@ class _CaptureScreenState extends State<CaptureScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  OutlinedButton.icon(
+                   if (!widget.smartOnly && !widget.manualOnly) OutlinedButton.icon(
                     onPressed: _loading ? null : _fallbackAppraise,
                     icon: const Icon(Icons.recycling),
                     label: const Text('老旧机/无法开机兜底估价'),
                   ),
                   const SizedBox(height: 24),
-                  Text(
+                   if (!widget.smartOnly && !widget.fallbackOnly) Text(
                     key: _manualSelectionKey,
                     '手动选择机型',
                     style: const TextStyle(
@@ -657,7 +704,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  TextField(
+                   if (!widget.smartOnly && !widget.fallbackOnly) TextField(
                     controller: _searchController,
                     decoration: const InputDecoration(
                       labelText: '直接搜索型号',
@@ -672,9 +719,9 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       _selectedStorage = null;
                     }),
                   ),
-                  if (_searchController.text.trim().isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
+                   if (!widget.smartOnly && !widget.fallbackOnly && _searchController.text.trim().isNotEmpty) ...[
+                   if (!widget.smartOnly && !widget.fallbackOnly) const SizedBox(height: 12),
+                   if (!widget.smartOnly && !widget.fallbackOnly) DropdownButtonFormField<String>(
                       key: ValueKey(_searchController.text),
                       initialValue:
                           _modelSearchResults.any(
@@ -706,8 +753,8 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       onChanged: _selectSearchResult,
                     ),
                   ],
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
+                   if (!widget.smartOnly && !widget.fallbackOnly) const SizedBox(height: 12),
+                   if (!widget.smartOnly && !widget.fallbackOnly) DropdownButtonFormField<String>(
                     initialValue: _selectedBrand,
                     menuMaxHeight: 320,
                     isExpanded: true,
@@ -759,8 +806,8 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       _selectedStorage = null;
                     }),
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<int>(
+                   if (!widget.smartOnly && !widget.fallbackOnly) const SizedBox(height: 12),
+                   if (!widget.smartOnly && !widget.fallbackOnly) DropdownButtonFormField<int>(
                     key: ValueKey(Object.hash(_selectedBrand, _selectedModel)),
                     initialValue: _storages.contains(_selectedStorage)
                         ? _selectedStorage
@@ -782,8 +829,8 @@ class _CaptureScreenState extends State<CaptureScreen> {
                     onChanged: (storage) =>
                         setState(() => _selectedStorage = storage),
                   ),
-                  const SizedBox(height: 24),
-                  SizedBox(
+                   if (!widget.smartOnly && !widget.fallbackOnly) const SizedBox(height: 24),
+                   if (!widget.smartOnly && !widget.fallbackOnly) SizedBox(
                     height: 52,
                     child: ElevatedButton(
                       onPressed: _next,

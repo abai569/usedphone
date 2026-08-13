@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'api_client.dart';
 import 'screens/activate_screen.dart';
 import 'screens/capture_screen.dart';
+import 'screens/home_screen.dart';
 
 void main() {
   runApp(const UsedPhoneApp());
@@ -71,7 +72,7 @@ class _UsedPhoneAppState extends State<UsedPhoneApp> {
           subtitleTextStyle: TextStyle(fontSize: 16, color: Colors.black54),
         ),
       ),
-      initialRoute: '/activate',
+      initialRoute: '/home',
       builder: (context, child) => MediaQuery.withClampedTextScaling(
         minScaleFactor: 1.15,
         maxScaleFactor: 1.8,
@@ -80,6 +81,7 @@ class _UsedPhoneAppState extends State<UsedPhoneApp> {
       routes: {
         '/activate': (context) => ActivateScreen(apiClient: apiClient),
         '/capture': (context) => CaptureScreen(apiClient: apiClient),
+        '/home': (context) => HomeScreen(apiClient: apiClient),
       },
     );
   }

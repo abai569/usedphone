@@ -95,7 +95,7 @@ class _ActivateScreenState extends State<ActivateScreen> {
   }
 
   void _goToCapture() {
-    Navigator.pushReplacementNamed(context, '/capture');
+    Navigator.pushReplacementNamed(context, '/home');
   }
 
   String _activationError(String? error) {
