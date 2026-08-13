@@ -580,20 +580,22 @@ class _CaptureScreenState extends State<CaptureScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              RadioGroup<String>(
-                groupValue: selected,
-                onChanged: (value) => setDialogState(() => selected = value),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: models
-                      .map(
-                        (model) => RadioListTile<String>(
-                          title: Text(model.toString()),
-                          value: model.toString(),
-                        ),
-                      )
-                      .toList(),
+              DropdownButtonFormField<String>(
+                initialValue: selected,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: '候选型号',
+                  border: OutlineInputBorder(),
                 ),
+                items: models
+                    .map(
+                      (model) => DropdownMenuItem<String>(
+                        value: model.toString(),
+                        child: Text(model.toString()),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) => setDialogState(() => selected = value),
               ),
             ],
           ),
@@ -603,6 +605,11 @@ class _CaptureScreenState extends State<CaptureScreen> {
               onPressed: selected == null
                   ? null
                   : () => Navigator.pop(context, selected),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               child: const Text('确定'),
             ),
           ],
@@ -658,7 +665,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
               absorbing: _recognizing,
               child: ListView(
                 controller: _scrollController,
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.fromLTRB(16, widget.smartOnly ? 72 : 32, 16, 16),
                 children: [
                    if (!widget.manualOnly && !widget.fallbackOnly) Row(
                     children: [
@@ -781,8 +788,8 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       _searchController.clear();
                     }),
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
+                  if (!widget.smartOnly && !widget.fallbackOnly) const SizedBox(height: 12),
+                  if (!widget.smartOnly && !widget.fallbackOnly) DropdownButtonFormField<String>(
                     key: ValueKey(_selectedBrand),
                     initialValue: _models.contains(_selectedModel)
                         ? _selectedModel

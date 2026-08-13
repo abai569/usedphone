@@ -17,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _authorized = false;
   String? _expiresAt;
+  String? _licenseType;
 
   @override
   void initState() {
@@ -36,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _authorized = token != null && expiry != null && expiry.isAfter(DateTime.now());
       _expiresAt = expiresAt;
+      _licenseType = prefs.getString('license_type');
     });
   }
 
@@ -49,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showAbout() async {
-    await showAppMessage(context, title: '关于软件', message: '二手手机估价\n版本：1.2.0');
+    await showAppMessage(context, title: '关于软件', message: '二手手机估价\n版本：1.2.1');
   }
 
   Future<void> _showAuthorization() async {
@@ -62,9 +64,23 @@ class _HomeScreenState extends State<HomeScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_authorized ? '授权状态：已授权\n有效期至：${_expiresAt?.substring(0, 10) ?? '-'}' : '当前未授权'),
-            const SizedBox(height: 16),
-            TextField(controller: controller, decoration: const InputDecoration(labelText: '重新授权码', border: OutlineInputBorder())),
+            Text(
+              '激活状态：${_authorized ? '已授权' : '未授权'}\n'
+              '授权类型：${_licenseType == 'year' ? '年' : _licenseType == 'month' ? '月' : '-'}\n'
+              '有效期至：${_expiresAt?.substring(0, 10) ?? '-'}',
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 52,
+              child: TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  hintText: '粘贴激活码',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+            ),
           ],
         ),
         actionsAlignment: MainAxisAlignment.center,
@@ -92,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
                 await prefs.setString('license_token', result.token!);
                 await prefs.setString('expires_at', result.expiresAt!);
+                if (result.licenseType != null) await prefs.setString('license_type', result.licenseType!);
                 widget.apiClient.setLicenseToken(result.token);
                 if (!context.mounted) return;
                 Navigator.pop(context);
@@ -100,7 +117,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (context.mounted) await showAppMessage(context, title: '授权失败', message: '网络连接失败，请稍后重试。', icon: Icons.error_outline, color: Colors.red);
               }
             },
-            child: const Text('重新授权'),
+            style: FilledButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+            child: const Text('确认'),
           ),
         ],
       ),
@@ -108,16 +126,63 @@ class _HomeScreenState extends State<HomeScreen> {
     controller.dispose();
   }
 
+  Future<void> _showFallback() async {
+    const states = <String, String>{
+      'working': '可开机，基本功能正常',
+      'working_faulty': '可开机，但碎屏或有明显故障',
+      'no_power': '无法开机，外观基本完整',
+      'severe_damage': '严重破损、进水或拆修',
+    };
+    String? selected;
+    final state = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('选择旧机状态', textAlign: TextAlign.center),
+          content: RadioGroup<String>(
+            groupValue: selected,
+            onChanged: (value) => setDialogState(() => selected = value),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: states.entries.map((entry) => RadioListTile<String>(value: entry.key, title: Text(entry.value))).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+            FilledButton(
+              onPressed: selected == null ? null : () => Navigator.pop(context, selected),
+              style: FilledButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+              child: const Text('确定'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (state == null || !mounted) return;
+    try {
+      final result = await widget.apiClient.fallbackAppraise(state);
+      if (!mounted) return;
+      await showAppMessage(
+        context,
+        title: '老旧机兜底估价',
+        message: '回收参考价：¥${result.mid.toStringAsFixed(0)}\n价格范围：¥${result.min.toStringAsFixed(0)} - ¥${result.max.toStringAsFixed(0)}',
+      );
+    } catch (_) {
+      if (mounted) await showAppMessage(context, title: '估价失败', message: '请检查网络后重试。', icon: Icons.error_outline, color: Colors.red);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('二手手机估价')),
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 72, 24, 24),
         children: [
           _entry('智能识别机型', Icons.auto_awesome, _authorized ? () => _openCapture(smart: true) : null),
           _entry('手动识别机型', Icons.search, _authorized ? () => _openCapture(smart: false) : null),
-          _entry('老旧机兜底估价', Icons.recycling, _authorized ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => CaptureScreen(apiClient: widget.apiClient, fallbackOnly: true))) : null),
+          _entry('老旧机兜底估价', Icons.recycling, _authorized ? _showFallback : null),
           _entry('授权管理', Icons.verified_user, _showAuthorization),
           _entry('关于软件', Icons.info_outline, _showAbout),
         ],

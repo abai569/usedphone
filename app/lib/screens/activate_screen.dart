@@ -67,6 +67,9 @@ class _ActivateScreenState extends State<ActivateScreen> {
       if (result.isActive && result.expiresAt != null && result.token != null) {
         await prefs.setString('expires_at', result.expiresAt!);
         await prefs.setString('license_token', result.token!);
+        if (result.licenseType != null) {
+          await prefs.setString('license_type', result.licenseType!);
+        }
         widget.apiClient.setLicenseToken(result.token);
         _goToCapture();
       } else if (result.isActive) {

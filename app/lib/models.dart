@@ -68,8 +68,9 @@ class ActivationResult {
   final String? expiresAt;
   final String? token;
   final String? error;
+  final String? licenseType;
 
-  ActivationResult({required this.status, this.expiresAt, this.token, this.error});
+  ActivationResult({required this.status, this.expiresAt, this.token, this.error, this.licenseType});
 
   factory ActivationResult.fromJson(Map<String, dynamic> json) {
     return ActivationResult(
@@ -77,6 +78,7 @@ class ActivationResult {
       expiresAt: json['expires_at'] as String?,
       token: json['token'] as String?,
       error: json['error'] as String?,
+      licenseType: json['license_type'] as String?,
     );
   }
 

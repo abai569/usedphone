@@ -44,4 +44,13 @@ void main() {
       '小米 K40 Pro\n容量：未识别\n回收参考价：¥680\n价格类型：通用机型参考价',
     );
   });
+
+  test('ActivationResult parses license type', () {
+    final result = ActivationResult.fromJson({
+      'status': 'active',
+      'license_type': 'year',
+    });
+
+    expect(result.licenseType, 'year');
+  });
 }
