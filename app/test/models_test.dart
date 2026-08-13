@@ -45,6 +45,13 @@ void main() {
     );
   });
 
+  test('recognized model series keeps the shared Xiaomi K40 prefix', () {
+    expect(
+      recognizedModelSeriesName('小米', ['K40', 'K40 Pro', 'K40 Pro+']),
+      '小米 K40',
+    );
+  });
+
   test('ActivationResult parses license type', () {
     final result = ActivationResult.fromJson({
       'status': 'active',

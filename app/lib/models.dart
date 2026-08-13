@@ -47,6 +47,27 @@ String recognitionNoticeMessage(
   return '$brandName ${device.model}\n$capacity\n回收参考价：¥${device.basePrice.toStringAsFixed(0)}$priceType$selection';
 }
 
+String recognizedModelSeriesName(String brandName, List<dynamic> models) {
+  final names = models
+      .map((model) => model.toString().trim())
+      .where((model) => model.isNotEmpty)
+      .toList();
+  if (names.isEmpty) return '$brandName 手机';
+
+  final words = names.map((model) => model.split(RegExp(r'\s+'))).toList();
+  final prefix = <String>[];
+  for (var index = 0; index < words.first.length; index++) {
+    final word = words.first[index];
+    if (words.every((parts) => parts.length > index && parts[index] == word)) {
+      prefix.add(word);
+    } else {
+      break;
+    }
+  }
+  if (prefix.isEmpty) return '$brandName 手机';
+  return '$brandName ${prefix.join(' ')}';
+}
+
 class AppraisalResult {
   final double min;
   final double mid;

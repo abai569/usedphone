@@ -512,7 +512,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '识别到 ${_brandNames[brand] ?? brand} 系列\n外观无法区分具体版本，请选择型号。',
+                '识别到 ${recognizedModelSeriesName(_brandNames[brand] ?? brand, models)} 系列\n外观无法区分，请选择型号。',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
