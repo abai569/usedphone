@@ -20,8 +20,10 @@ class ResultScreen extends StatelessWidget {
               '${device.brand} ${device.model}',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            Text('${device.storage}GB',
-                style: const TextStyle(fontSize: 16, color: Colors.grey)),
+            Text(
+              'ID：${device.id}  容量：${device.storage == 0 ? '通用' : '${device.storage}GB'}',
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
+            ),
             const SizedBox(height: 32),
             const Text('建议收机价格',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),

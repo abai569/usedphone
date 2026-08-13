@@ -411,7 +411,12 @@ class _CaptureScreenState extends State<CaptureScreen> {
         barrierDismissible: false,
         builder: (context) => AlertDialog(
           title: const Text('AI 智能估价', textAlign: TextAlign.center),
-          content: Text('机型：${_brandNames[device.brand] ?? device.brand} ${device.model}\n\n回收参考价：¥${result.mid.toStringAsFixed(0)}', textAlign: TextAlign.center),
+          content: Text(
+            '机型：${_brandNames[device.brand] ?? device.brand} ${device.model}\n'
+            'ID：${device.id}  容量：${device.storage == 0 ? '通用' : '${device.storage}GB'}\n\n'
+            '回收参考价：¥${result.mid.toStringAsFixed(0)}',
+            textAlign: TextAlign.center,
+          ),
           actionsAlignment: MainAxisAlignment.end,
           actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('确定'))],
         ),
