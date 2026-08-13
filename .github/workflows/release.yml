@@ -51,10 +51,17 @@ jobs:
           EOF
           test -s android/app/key.properties
           grep -q '^storeFile=key.p12$' android/app/key.properties
-      - run: flutter build apk --release --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
-      - name: Rename APK
+      - run: flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
+      - name: Rename APKs
         shell: bash
-        run: mv build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/flutter-apk/usedphone-${GITHUB_REF_NAME}.apk"
+        run: |
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            src="build/app/outputs/flutter-apk/app-${abi}-release.apk"
+            dst="build/app/outputs/flutter-apk/usedphone-${GITHUB_REF_NAME}-${abi}.apk"
+            if [ -f "$src" ]; then
+              mv "$src" "$dst"
+            fi
+          done
       - uses: softprops/action-gh-release@v2
         with:
-          files: app/build/app/outputs/flutter-apk/usedphone-${{ github.ref_name }}.apk
+          files: app/build/app/outputs/flutter-apk/usedphone-${{ github.ref_name }}-*.apk

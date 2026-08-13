@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api_client.dart';
@@ -51,10 +52,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showAbout() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (!mounted) return;
     await showAppMessage(
       context,
       title: '关于软件',
-      message: '二手手机估价\n版本：1.2.1',
+      message: '二手手机估价\n版本：${packageInfo.version}',
       actionLabel: '关闭',
       squareAction: true,
     );
