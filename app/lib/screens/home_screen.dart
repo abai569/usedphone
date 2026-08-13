@@ -150,19 +150,27 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('选择旧机状态', textAlign: TextAlign.center),
-          content: RadioGroup<String>(
-            groupValue: selected,
-            onChanged: (value) => setDialogState(() => selected = value),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: states.entries.map((entry) => RadioListTile<String>(value: entry.key, title: Text(entry.value))).toList(),
+          content: DropdownButtonFormField<String>(
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: '旧机状态',
+              border: OutlineInputBorder(),
             ),
+            items: states.entries
+                .map(
+                  (entry) => DropdownMenuItem<String>(
+                    value: entry.key,
+                    child: Text(entry.value),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) => setDialogState(() => selected = value),
           ),
+          actionsAlignment: MainAxisAlignment.end,
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
             FilledButton(
               onPressed: selected == null ? null : () => Navigator.pop(context, selected),
-              style: FilledButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
               child: const Text('确定'),
             ),
           ],
