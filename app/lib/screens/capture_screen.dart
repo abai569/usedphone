@@ -42,6 +42,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
   final _manualSelectionKey = GlobalKey();
   File? _frontImage;
   File? _backImage;
+  File? _settingsImage;
   bool _loading = false;
   bool _recognizing = false;
   List<Device> _devices = [];
@@ -205,6 +206,17 @@ class _CaptureScreenState extends State<CaptureScreen> {
     if (file != null && mounted) setState(() => _backImage = File(file.path));
   }
 
+  Future<void> _pickSettings() async {
+    final source = await _pickImageSource();
+    if (source == null) return;
+    final file = await _picker.pickImage(
+      source: source,
+      imageQuality: 40,
+      maxWidth: 800,
+    );
+    if (file != null && mounted) setState(() => _settingsImage = File(file.path));
+  }
+
   Future<ImageSource?> _pickImageSource() async {
     return showDialog<ImageSource>(
       context: context,
@@ -252,6 +264,8 @@ class _CaptureScreenState extends State<CaptureScreen> {
         'front.jpg',
         await _backImage!.readAsBytes(),
         'back.jpg',
+        settingsImageBytes: _settingsImage != null ? await _settingsImage!.readAsBytes() : null,
+        settingsFilename: 'settings.jpg',
       );
       if (!mounted) return;
       setState(() {
@@ -426,7 +440,24 @@ class _CaptureScreenState extends State<CaptureScreen> {
             textAlign: TextAlign.center,
           ),
           actionsAlignment: MainAxisAlignment.end,
-          actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('确定'))],
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CaptureScreen(
+                      apiClient: widget.apiClient,
+                      manualOnly: true,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('型号不对，手动选择'),
+            ),
+            FilledButton(onPressed: () => Navigator.pop(context), child: const Text('确定')),
+          ],
         ),
       );
     } catch (_) {
@@ -669,6 +700,14 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       ),
                     ],
                   ),
+                  if (!widget.manualOnly && !widget.fallbackOnly)
+                    const SizedBox(height: 16),
+                  if (!widget.manualOnly && !widget.fallbackOnly)
+                    _PhotoBox(
+                      label: '关于手机（可选，提高识别准确率）',
+                      image: _settingsImage,
+                      onTap: _pickSettings,
+                    ),
                   if (!widget.manualOnly && !widget.fallbackOnly)
                     const SizedBox(height: 16),
                    if (!widget.manualOnly && !widget.fallbackOnly) SizedBox(

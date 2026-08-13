@@ -54,8 +54,10 @@ class ApiClient {
     List<int> frontImageBytes,
     String frontFilename,
     List<int> backImageBytes,
-    String backFilename,
-  ) async {
+    String backFilename, {
+    List<int>? settingsImageBytes,
+    String settingsFilename = 'settings.jpg',
+  }) async {
     final request = MultipartRequest('POST', Uri.parse('$baseUrl/recognize'))
       ..headers.addAll(_authHeaders);
     request.files.add(MultipartFile.fromBytes(
@@ -68,6 +70,13 @@ class ApiClient {
       backImageBytes,
       filename: backFilename,
     ));
+    if (settingsImageBytes != null && settingsImageBytes.isNotEmpty) {
+      request.files.add(MultipartFile.fromBytes(
+        'settings_photo',
+        settingsImageBytes,
+        filename: settingsFilename,
+      ));
+    }
 
     final streamedResponse = await _client.send(request);
     final response = await Response.fromStream(streamedResponse);
