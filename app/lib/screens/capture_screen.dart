@@ -427,11 +427,12 @@ class _CaptureScreenState extends State<CaptureScreen> {
         builder: (context) => AlertDialog(
           title: const Text('AI 智能估价', textAlign: TextAlign.center),
           content: Text('机型：${_brandNames[device.brand] ?? device.brand} ${device.model}\n\n回收参考价：¥${result.mid.toStringAsFixed(0)}', textAlign: TextAlign.center),
-          actionsAlignment: MainAxisAlignment.center,
+          actionsAlignment: MainAxisAlignment.end,
           actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('确定'))],
         ),
       );
     } catch (_) {
+
       if (mounted) await showAppMessage(context, title: '估价失败', message: '请检查网络后重试。', icon: Icons.error_outline, color: Colors.red);
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -452,20 +453,21 @@ class _CaptureScreenState extends State<CaptureScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('选择旧机状态', textAlign: TextAlign.center),
-          content: RadioGroup<String>(
-            groupValue: selected,
-            onChanged: (value) => setDialogState(() => selected = value),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: states.entries
-                  .map(
-                    (entry) => RadioListTile<String>(
-                      value: entry.key,
-                      title: Text(entry.value),
-                    ),
-                  )
-                  .toList(),
+          content: DropdownButtonFormField<String>(
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: '旧机状态',
+              border: OutlineInputBorder(),
             ),
+            items: states.entries
+                .map(
+                  (entry) => DropdownMenuItem<String>(
+                    value: entry.key,
+                    child: Text(entry.value),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) => setDialogState(() => selected = value),
           ),
           actions: [
             TextButton(
@@ -475,17 +477,13 @@ class _CaptureScreenState extends State<CaptureScreen> {
             FilledButton(
               onPressed:
                   selected == null ? null : () => Navigator.pop(context, selected),
-              style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
               child: const Text('确定'),
             ),
           ],
         ),
       ),
     );
+
     if (state == null || !mounted) return;
     try {
       final result = await widget.apiClient.fallbackAppraise(state);
@@ -530,7 +528,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 19, height: 1.5),
         ),
-        actionsAlignment: MainAxisAlignment.center,
+        actionsAlignment: MainAxisAlignment.end,
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(context),
@@ -616,17 +614,12 @@ class _CaptureScreenState extends State<CaptureScreen> {
               ),
             ],
           ),
-          actionsAlignment: MainAxisAlignment.center,
+          actionsAlignment: MainAxisAlignment.end,
           actions: [
             FilledButton(
               onPressed: selected == null
                   ? null
                   : () => Navigator.pop(context, selected),
-              style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
               child: const Text('确定'),
             ),
           ],
@@ -636,6 +629,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
   }
 
   @override
+
   Widget build(BuildContext context) {
     return PopScope(
       canPop: !_recognizing,

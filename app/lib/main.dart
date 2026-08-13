@@ -42,6 +42,21 @@ class _UsedPhoneAppState extends State<UsedPhoneApp> {
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             minimumSize: const Size(64, 52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(64, 52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             textStyle: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -51,6 +66,9 @@ class _UsedPhoneAppState extends State<UsedPhoneApp> {
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(64, 52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             textStyle: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -60,6 +78,9 @@ class _UsedPhoneAppState extends State<UsedPhoneApp> {
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
             minimumSize: const Size(64, 48),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             textStyle: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,

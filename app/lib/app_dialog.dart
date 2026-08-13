@@ -16,7 +16,7 @@ Future<void> showAppMessage(
       icon: Icon(icon, color: color, size: 56),
       title: Text(title, textAlign: TextAlign.center),
       content: Text(message, textAlign: TextAlign.center),
-      actionsAlignment: MainAxisAlignment.center,
+      actionsAlignment: MainAxisAlignment.end,
       actions: [
         FilledButton(
           onPressed: () => Navigator.pop(context),

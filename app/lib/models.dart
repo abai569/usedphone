@@ -54,19 +54,44 @@ String recognizedModelSeriesName(String brandName, List<dynamic> models) {
       .toList();
   if (names.isEmpty) return '$brandName 手机';
 
-  final words = names.map((model) => model.split(RegExp(r'\s+'))).toList();
+  final tokens = names.map(_splitModelTokens).toList();
   final prefix = <String>[];
-  for (var index = 0; index < words.first.length; index++) {
-    final word = words.first[index];
-    if (words.every((parts) => parts.length > index && parts[index] == word)) {
-      prefix.add(word);
+  for (var index = 0; index < tokens.first.length; index++) {
+    final token = tokens.first[index];
+    if (tokens.every((parts) => parts.length > index && parts[index] == token)) {
+      prefix.add(token);
     } else {
       break;
     }
   }
   if (prefix.isEmpty) return '$brandName 手机';
-  return '$brandName ${prefix.join(' ')}';
+  return '$brandName ${prefix.join('')}';
 }
+
+List<String> _splitModelTokens(String model) {
+  final tokens = <String>[];
+  final buffer = StringBuffer();
+  String? lastKind;
+  for (final rune in model.runes) {
+    final char = String.fromCharCode(rune);
+    final kind = RegExp(r'[0-9]').hasMatch(char)
+        ? 'digit'
+        : RegExp(r'[A-Za-z\u4e00-\u9fa5]').hasMatch(char)
+            ? 'letter'
+            : 'other';
+    if (buffer.isNotEmpty && lastKind != null && lastKind != kind) {
+      tokens.add(buffer.toString());
+      buffer.clear();
+    }
+    buffer.write(char);
+    lastKind = kind;
+  }
+  if (buffer.isNotEmpty) {
+    tokens.add(buffer.toString());
+  }
+  return tokens;
+}
+
 
 class AppraisalResult {
   final double min;

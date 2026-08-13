@@ -93,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        actionsAlignment: MainAxisAlignment.center,
+        actionsAlignment: MainAxisAlignment.end,
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭')),
           FilledButton(

@@ -52,6 +52,13 @@ void main() {
     );
   });
 
+  test('recognized model series handles suffix variants like K40S', () {
+    expect(
+      recognizedModelSeriesName('小米', ['K40', 'K40S']),
+      '小米 K40',
+    );
+  });
+
   test('ActivationResult parses license type', () {
     final result = ActivationResult.fromJson({
       'status': 'active',
