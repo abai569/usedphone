@@ -274,11 +274,15 @@ class _CaptureScreenState extends State<CaptureScreen> {
           });
           if (widget.smartOnly) {
             final appearance = result.suggestion?['appearance'] as String? ?? 'good';
+            final functionalIssues = (result.suggestion?['functional_issues'] as List<dynamic>? ?? const [])
+                .map((issue) => issue.toString())
+                .toList();
+            final accessory = result.suggestion?['accessory'] as String? ?? 'none';
             final smartDevice = matchingDevices.firstWhere(
               (device) => device.storage == 0,
               orElse: () => match,
             );
-            await _smartAppraise(smartDevice, appearance);
+            await _smartAppraise(smartDevice, appearance, functionalIssues, accessory);
             return;
           }
 
@@ -350,7 +354,11 @@ class _CaptureScreenState extends State<CaptureScreen> {
         });
         if (widget.smartOnly) {
           final appearance = result.suggestion?['appearance'] as String? ?? 'good';
-          await _smartAppraise(selected, appearance);
+          final functionalIssues = (result.suggestion?['functional_issues'] as List<dynamic>? ?? const [])
+              .map((issue) => issue.toString())
+              .toList();
+          final accessory = result.suggestion?['accessory'] as String? ?? 'none';
+          await _smartAppraise(selected, appearance, functionalIssues, accessory);
         } else {
           await _next();
         }
@@ -394,15 +402,15 @@ class _CaptureScreenState extends State<CaptureScreen> {
     }
   }
 
-  Future<void> _smartAppraise(Device device, String appearance) async {
+  Future<void> _smartAppraise(Device device, String appearance, List<String> functionalIssues, String accessory) async {
     setState(() => _loading = true);
     try {
       final result = await widget.apiClient.appraise(
         deviceId: device.id,
         storage: device.storage,
         appearance: appearance,
-        functionalIssues: const ['no_power'],
-        accessory: 'none',
+        functionalIssues: functionalIssues,
+        accessory: accessory,
         deviceKey: (await SharedPreferences.getInstance()).getString('device_key') ?? '',
       );
       if (!mounted) return;
