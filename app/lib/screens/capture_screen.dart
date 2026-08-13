@@ -47,7 +47,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
   List<Device> _devices = [];
   String? _selectedBrand;
   String? _selectedModel;
-  int? _selectedStorage;
+  String? _selectedStorage;
   String? _selectedSearchResult;
 
   @override
@@ -63,9 +63,15 @@ class _CaptureScreenState extends State<CaptureScreen> {
     super.dispose();
   }
 
-  List<String> get _brands =>
-      _devices.map((d) => d.brand).toSet().toList()
-        ..sort((a, b) => (_brandNames[a] ?? a).compareTo(_brandNames[b] ?? b));
+  List<String> get _brands {
+    final brands = _devices.map((d) => d.brand).toSet().toList();
+    brands.sort((a, b) {
+      final nameA = (_brandNames[a] ?? a).toLowerCase();
+      final nameB = (_brandNames[b] ?? b).toLowerCase();
+      return nameA.compareTo(nameB);
+    });
+    return brands;
+  }
 
   List<String> get _models {
     final models =
@@ -113,41 +119,21 @@ class _CaptureScreenState extends State<CaptureScreen> {
     if (parts.length != 2) return;
     final brand = parts[0];
     final model = parts[1];
-    final storages = _devices
-        .where((device) => device.brand == brand && device.model == model)
-        .map((device) => device.storage)
-        .toSet()
-        .toList();
     setState(() {
       _selectedSearchResult = value;
       _selectedBrand = brand;
       _selectedModel = model;
-      _selectedStorage = storages.length == 1 ? storages.single : null;
+      _selectedStorage = null;
     });
   }
 
-  List<int> get _storages {
-    final storages =
-        _devices
-            .where(
-              (d) => d.brand == _selectedBrand && d.model == _selectedModel,
-            )
-            .map((d) => d.storage)
-            .toSet()
-            .toList()
-          ..sort();
-    return storages;
-  }
+  static const List<String> _storageLabels = ['64G', '128G', '256G', '512G', '1T'];
 
   Device? get _selectedDevice {
-    for (final device in _devices) {
-      if (device.brand == _selectedBrand &&
-          device.model == _selectedModel &&
-          device.storage == _selectedStorage) {
-        return device;
-      }
-    }
-    return null;
+    final matches = _devices.where(
+      (d) => d.brand == _selectedBrand && d.model == _selectedModel,
+    );
+    return matches.isEmpty ? null : matches.first;
   }
 
   Future<void> _loadDevices() async {
@@ -192,7 +178,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
       if (recent != null) {
         _selectedBrand = recent.brand;
         _selectedModel = recent.model;
-        _selectedStorage = recent.storage;
+        _selectedStorage = null;
       }
     });
   }
@@ -284,19 +270,18 @@ class _CaptureScreenState extends State<CaptureScreen> {
           setState(() {
             _selectedBrand = match.brand;
             _selectedModel = match.model;
-             _selectedStorage = matchingDevices.length == 1
-                 ? match.storage
-                 : null;
-           });
-           if (widget.smartOnly) {
-             final appearance = result.suggestion?['appearance'] as String? ?? 'good';
-             final smartDevice = matchingDevices.firstWhere(
-               (device) => device.storage == 0,
-               orElse: () => match,
-             );
-             await _smartAppraise(smartDevice, appearance);
-             return;
-           }
+            _selectedStorage = null;
+          });
+          if (widget.smartOnly) {
+            final appearance = result.suggestion?['appearance'] as String? ?? 'good';
+            final smartDevice = matchingDevices.firstWhere(
+              (device) => device.storage == 0,
+              orElse: () => match,
+            );
+            await _smartAppraise(smartDevice, appearance);
+            return;
+          }
+
            await _showRecognitionNotice(
             icon: Icons.check_circle,
             color: Colors.green,
@@ -361,7 +346,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
         setState(() {
           _selectedBrand = brand;
           _selectedModel = selectedModel;
-          _selectedStorage = selected.storage;
+          _selectedStorage = null;
         });
         if (widget.smartOnly) {
           final appearance = result.suggestion?['appearance'] as String? ?? 'good';
@@ -707,124 +692,102 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       _selectedStorage = null;
                     }),
                   ),
-                   if (widget.manualOnly && _searchController.text.trim().isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      key: ValueKey(_searchController.text),
-                      initialValue:
-                          _modelSearchResults.any(
-                            (result) =>
-                                '${result.brand}\u0000${result.model}' ==
-                                _selectedSearchResult,
-                          )
+                  if (widget.manualOnly) const SizedBox(height: 12),
+                  if (widget.manualOnly && _searchController.text.trim().isNotEmpty)
+                    DropdownMenu<String>(
+                      initialSelection: _modelSearchResults.any(
+                        (result) =>
+                            '${result.brand}\u0000${result.model}' ==
+                            _selectedSearchResult,
+                      )
                           ? _selectedSearchResult
                           : null,
-                      menuMaxHeight: 320,
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        labelText: _modelSearchResults.isEmpty
-                            ? '没有找到匹配机型'
-                            : '搜索结果（${_modelSearchResults.length}）',
-                        border: const OutlineInputBorder(),
-                      ),
-                      items: _modelSearchResults
+                      width: double.infinity,
+                      label: const Text('搜索结果'),
+                      dropdownMenuEntries: _modelSearchResults
                           .map(
-                            (result) => DropdownMenuItem(
+                            (result) => DropdownMenuEntry(
                               value: '${result.brand}\u0000${result.model}',
-                              child: Text(
-                                '${_brandNames[result.brand] ?? result.brand} · ${result.model}',
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              label:
+                                  '${_brandNames[result.brand] ?? result.brand} · ${result.model}',
                             ),
                           )
                           .toList(),
-                      onChanged: _selectSearchResult,
+                      onSelected: _selectSearchResult,
                     ),
-                  ],
-                    if (widget.manualOnly) const SizedBox(height: 12),
-                    if (widget.manualOnly) DropdownButtonFormField<String>(
-                    initialValue: _selectedBrand,
-                    menuMaxHeight: 320,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: '品牌',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _brands
-                        .map(
-                          (brand) => DropdownMenuItem(
-                            value: brand,
-                            child: Text(
-                              _brandNames[brand] ?? brand,
-                              overflow: TextOverflow.ellipsis,
+                  if (widget.manualOnly) const SizedBox(height: 12),
+                  if (widget.manualOnly)
+                    DropdownMenu<String>(
+                      initialSelection: _selectedBrand,
+                      width: double.infinity,
+                      label: const Text('品牌'),
+                      dropdownMenuEntries: _brands
+                          .map(
+                            (brand) => DropdownMenuEntry(
+                              value: brand,
+                              label: _brandNames[brand] ?? brand,
                             ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (brand) => setState(() {
-                      _selectedBrand = brand;
-                      _selectedModel = null;
-                      _selectedStorage = null;
-                      _selectedSearchResult = null;
-                      _searchController.clear();
-                    }),
-                  ),
-                   if (widget.manualOnly) const SizedBox(height: 12),
-                   if (widget.manualOnly) DropdownButtonFormField<String>(
-                    key: ValueKey(_selectedBrand),
-                    initialValue: _models.contains(_selectedModel)
-                        ? _selectedModel
-                        : null,
-                    menuMaxHeight: 320,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: '型号',
-                      border: OutlineInputBorder(),
+                          )
+                          .toList(),
+                      onSelected: (brand) => setState(() {
+                        _selectedBrand = brand;
+                        _selectedModel = null;
+                        _selectedStorage = null;
+                        _selectedSearchResult = null;
+                        _searchController.clear();
+                      }),
                     ),
-                    items: _models
-                        .map(
-                          (model) => DropdownMenuItem(
-                            value: model,
-                            child: Text(model, overflow: TextOverflow.ellipsis),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (model) => setState(() {
-                      _selectedModel = model;
-                      _selectedStorage = null;
-                    }),
-                  ),
-                    if (widget.manualOnly) const SizedBox(height: 12),
-                    if (widget.manualOnly) DropdownButtonFormField<int>(
-                    key: ValueKey(Object.hash(_selectedBrand, _selectedModel)),
-                    initialValue: _storages.contains(_selectedStorage)
-                        ? _selectedStorage
-                        : null,
-                    menuMaxHeight: 320,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: '容量',
-                      border: OutlineInputBorder(),
+                  if (widget.manualOnly) const SizedBox(height: 12),
+                  if (widget.manualOnly)
+                    DropdownMenu<String>(
+                      key: ValueKey(_selectedBrand),
+                      initialSelection:
+                          _models.contains(_selectedModel) ? _selectedModel : null,
+                      width: double.infinity,
+                      label: const Text('型号'),
+                      enabled: _selectedBrand != null,
+                      dropdownMenuEntries: _models
+                          .map(
+                            (model) => DropdownMenuEntry(
+                              value: model,
+                              label: model,
+                            ),
+                          )
+                          .toList(),
+                      onSelected: (model) => setState(() {
+                        _selectedModel = model;
+                        _selectedStorage = null;
+                      }),
                     ),
-                    items: _storages
-                        .map(
-                          (storage) => DropdownMenuItem(
-                            value: storage,
-                            child: Text('${storage}GB'),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (storage) =>
-                        setState(() => _selectedStorage = storage),
-                  ),
-                    if (widget.manualOnly) const SizedBox(height: 24),
-                    if (widget.manualOnly) SizedBox(
+                  if (widget.manualOnly) const SizedBox(height: 12),
+                  if (widget.manualOnly)
+                    DropdownMenu<String>(
+                      key: ValueKey(
+                          Object.hash(_selectedBrand, _selectedModel)),
+                      initialSelection: _selectedStorage,
+                      width: double.infinity,
+                      label: const Text('容量'),
+                      enabled: _selectedModel != null,
+                      dropdownMenuEntries: _storageLabels
+                          .map(
+                            (label) => DropdownMenuEntry(
+                              value: label,
+                              label: label,
+                            ),
+                          )
+                          .toList(),
+                      onSelected: (storage) =>
+                          setState(() => _selectedStorage = storage),
+                    ),
+                  if (widget.manualOnly) const SizedBox(height: 24),
+                  if (widget.manualOnly) SizedBox(
                     height: 52,
                     child: ElevatedButton(
                       onPressed: _next,
                       child: const Text('下一步：选择成色'),
                     ),
                   ),
+
                 ],
               ),
             ),
