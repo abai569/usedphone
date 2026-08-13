@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [main, master]
   pull_request:
     branches: [main, master]
 
@@ -20,38 +18,3 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-      - name: Validate API URL
-        shell: bash
-        run: |
-          [[ "${API_BASE_URL}" == https://* ]] || { echo "API_BASE_URL must start with https://"; exit 1; }
-        env:
-          API_BASE_URL: ${{ vars.API_BASE_URL }}
-      - name: Restore release keystore
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        shell: bash
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          test -n "$KEYSTORE_BASE64"
-          test -n "$KEYSTORE_PASSWORD"
-          test -n "$KEY_ALIAS"
-          test -n "$KEY_PASSWORD"
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/app/key.p12
-          test -s android/app/key.p12
-          cat > android/app/key.properties <<EOF
-          storeFile=key.p12
-          storePassword=$KEYSTORE_PASSWORD
-          keyAlias=$KEY_ALIAS
-          keyPassword=$KEY_PASSWORD
-          storeType=pkcs12
-          EOF
-          test -s android/app/key.properties
-          grep -q '^storeFile=key.p12$' android/app/key.properties
-      - run: flutter build apk --release --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: app-release-apk
-          path: app/build/app/outputs/flutter-apk/app-release.apk

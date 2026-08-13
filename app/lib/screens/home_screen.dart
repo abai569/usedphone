@@ -51,7 +51,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showAbout() async {
-    await showAppMessage(context, title: '关于软件', message: '二手手机估价\n版本：1.2.1');
+    await showAppMessage(
+      context,
+      title: '关于软件',
+      message: '二手手机估价\n版本：1.2.1',
+      actionLabel: '关闭',
+      squareAction: true,
+    );
   }
 
   Future<void> _showAuthorization() async {
@@ -63,21 +69,25 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('授权管理', textAlign: TextAlign.center),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '激活状态：${_authorized ? '已授权' : '未授权'}\n'
-              '授权类型：${_licenseType == 'year' ? '年' : _licenseType == 'month' ? '月' : '-'}\n'
-              '有效期至：${_expiresAt?.substring(0, 10) ?? '-'}',
-            ),
-            const SizedBox(height: 12),
             SizedBox(
-              height: 52,
+              width: double.infinity,
+              child: Text(
+              '激活状态：${_authorized ? '已授权' : '未授权'}\n'
+              '授权类型：${_licenseType == 'year' ? '年' : '月'}\n'
+              '有效期至：${_expiresAt?.substring(0, 10) ?? '-'}',
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 44,
               child: TextField(
                 controller: controller,
                 decoration: const InputDecoration(
                   hintText: '粘贴激活码',
                   border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 ),
               ),
             ),
@@ -178,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('二手手机估价')),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 72, 24, 24),
+        padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
         children: [
           _entry('智能识别机型', Icons.auto_awesome, _authorized ? () => _openCapture(smart: true) : null),
           _entry('手动识别机型', Icons.search, _authorized ? () => _openCapture(smart: false) : null),

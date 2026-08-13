@@ -470,70 +470,6 @@ class _CaptureScreenState extends State<CaptureScreen> {
     }
   }
 
-  Future<void> _fallbackAppraise() async {
-    const states = <String, String>{
-      'working': '可开机，基本功能正常',
-      'working_faulty': '可开机，但碎屏或有明显故障',
-      'no_power': '无法开机，外观基本完整',
-      'severe_damage': '严重破损、进水或拆修',
-    };
-    final state = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('选择旧机状态', textAlign: TextAlign.center),
-        content: SingleChildScrollView(
-          child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ...states.entries.map(
-              (entry) => ListTile(
-                title: Text(entry.value),
-                onTap: () => Navigator.pop(context, entry.key),
-              ),
-            ),
-          ],
-          ),
-        ),
-      ),
-    );
-    if (state == null || !mounted) return;
-    setState(() => _loading = true);
-    try {
-      final result = await widget.apiClient.fallbackAppraise(state);
-      if (!mounted) return;
-      await showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('旧机兜底估价'),
-          content: Text(
-            '${states[state]}\n\n建议收购范围：¥${result.min.toStringAsFixed(0)} - ¥${result.max.toStringAsFixed(0)}\n'
-            '参考中位价：¥${result.mid.toStringAsFixed(0)}\n\n'
-            '该报价仅用于无可靠型号或行情的旧机，最高不超过 200 元。',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('知道了'),
-            ),
-          ],
-        ),
-      );
-    } catch (_) {
-      if (mounted) {
-        await showAppMessage(
-          context,
-          title: '旧机估价失败',
-          message: '暂不可用，请稍后重试。',
-          icon: Icons.error_outline,
-          color: Colors.red,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   Future<void> _next() async {
     final device = _selectedDevice;
     if (device == null) {
@@ -618,32 +554,6 @@ class _CaptureScreenState extends State<CaptureScreen> {
     );
   }
 
-  Future<void> _logout() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('退出激活'),
-        content: const Text('退出后需要重新输入激活码才能继续使用。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('退出', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true || !mounted) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('license_token');
-    await prefs.remove('expires_at');
-    if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/activate');
-  }
-
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -651,13 +561,6 @@ class _CaptureScreenState extends State<CaptureScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('二手手机估价'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: '退出激活',
-              onPressed: _loading ? null : _logout,
-            ),
-          ],
         ),
         body: Stack(
           children: [
@@ -665,8 +568,15 @@ class _CaptureScreenState extends State<CaptureScreen> {
               absorbing: _recognizing,
               child: ListView(
                 controller: _scrollController,
-                padding: EdgeInsets.fromLTRB(16, widget.smartOnly ? 72 : 32, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
                 children: [
+                  if (widget.smartOnly) ...[
+                    Text(
+                      '拍照后识别机型',
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                    if (!widget.manualOnly && !widget.fallbackOnly) Row(
                     children: [
                       Expanded(
@@ -686,7 +596,8 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  if (!widget.manualOnly && !widget.fallbackOnly)
+                    const SizedBox(height: 16),
                    if (!widget.manualOnly && !widget.fallbackOnly) SizedBox(
                     height: 48,
                     child: ElevatedButton.icon(
@@ -695,23 +606,18 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       label: Text(_loading ? '正在识别...' : '智能识别机型'),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                   if (!widget.smartOnly && !widget.manualOnly) OutlinedButton.icon(
-                    onPressed: _loading ? null : _fallbackAppraise,
-                    icon: const Icon(Icons.recycling),
-                    label: const Text('老旧机/无法开机兜底估价'),
-                  ),
-                  const SizedBox(height: 24),
-                   if (!widget.smartOnly && !widget.fallbackOnly) Text(
+                  if (widget.manualOnly) ...[
+                    Text(
                     key: _manualSelectionKey,
                     '手动选择机型',
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                   if (!widget.smartOnly && !widget.fallbackOnly) TextField(
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (widget.manualOnly) TextField(
                     controller: _searchController,
                     decoration: const InputDecoration(
                       labelText: '直接搜索型号',
@@ -726,9 +632,9 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       _selectedStorage = null;
                     }),
                   ),
-                   if (!widget.smartOnly && !widget.fallbackOnly && _searchController.text.trim().isNotEmpty) ...[
-                   if (!widget.smartOnly && !widget.fallbackOnly) const SizedBox(height: 12),
-                   if (!widget.smartOnly && !widget.fallbackOnly) DropdownButtonFormField<String>(
+                   if (widget.manualOnly && _searchController.text.trim().isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
                       key: ValueKey(_searchController.text),
                       initialValue:
                           _modelSearchResults.any(
@@ -760,8 +666,8 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       onChanged: _selectSearchResult,
                     ),
                   ],
-                   if (!widget.smartOnly && !widget.fallbackOnly) const SizedBox(height: 12),
-                   if (!widget.smartOnly && !widget.fallbackOnly) DropdownButtonFormField<String>(
+                    if (widget.manualOnly) const SizedBox(height: 12),
+                    if (widget.manualOnly) DropdownButtonFormField<String>(
                     initialValue: _selectedBrand,
                     menuMaxHeight: 320,
                     isExpanded: true,
@@ -788,8 +694,8 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       _searchController.clear();
                     }),
                   ),
-                  if (!widget.smartOnly && !widget.fallbackOnly) const SizedBox(height: 12),
-                  if (!widget.smartOnly && !widget.fallbackOnly) DropdownButtonFormField<String>(
+                   if (widget.manualOnly) const SizedBox(height: 12),
+                   if (widget.manualOnly) DropdownButtonFormField<String>(
                     key: ValueKey(_selectedBrand),
                     initialValue: _models.contains(_selectedModel)
                         ? _selectedModel
@@ -813,8 +719,8 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       _selectedStorage = null;
                     }),
                   ),
-                   if (!widget.smartOnly && !widget.fallbackOnly) const SizedBox(height: 12),
-                   if (!widget.smartOnly && !widget.fallbackOnly) DropdownButtonFormField<int>(
+                    if (widget.manualOnly) const SizedBox(height: 12),
+                    if (widget.manualOnly) DropdownButtonFormField<int>(
                     key: ValueKey(Object.hash(_selectedBrand, _selectedModel)),
                     initialValue: _storages.contains(_selectedStorage)
                         ? _selectedStorage
@@ -836,8 +742,8 @@ class _CaptureScreenState extends State<CaptureScreen> {
                     onChanged: (storage) =>
                         setState(() => _selectedStorage = storage),
                   ),
-                   if (!widget.smartOnly && !widget.fallbackOnly) const SizedBox(height: 24),
-                   if (!widget.smartOnly && !widget.fallbackOnly) SizedBox(
+                    if (widget.manualOnly) const SizedBox(height: 24),
+                    if (widget.manualOnly) SizedBox(
                     height: 52,
                     child: ElevatedButton(
                       onPressed: _next,

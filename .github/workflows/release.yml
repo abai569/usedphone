@@ -20,6 +20,8 @@ jobs:
         with:
           channel: stable
       - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
       - name: Validate API URL
         shell: bash
         run: |

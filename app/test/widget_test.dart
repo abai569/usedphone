@@ -26,7 +26,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('激活状态：未授权'), findsOneWidget);
-    expect(find.textContaining('授权类型：-'), findsOneWidget);
+    expect(find.textContaining('授权类型：月'), findsOneWidget);
     expect(find.textContaining('有效期至：-'), findsOneWidget);
     expect(
       find.byWidgetPredicate(

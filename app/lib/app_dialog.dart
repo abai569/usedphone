@@ -7,6 +7,7 @@ Future<void> showAppMessage(
   IconData icon = Icons.info_outline,
   Color color = Colors.orange,
   String actionLabel = '确定',
+  bool squareAction = false,
 }) async {
   await showDialog<void>(
     context: context,
@@ -19,6 +20,13 @@ Future<void> showAppMessage(
       actions: [
         FilledButton(
           onPressed: () => Navigator.pop(context),
+          style: squareAction
+              ? FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                )
+              : null,
           child: Text(actionLabel),
         ),
       ],
