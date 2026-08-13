@@ -333,6 +333,16 @@ class _CaptureScreenState extends State<CaptureScreen> {
         );
         return;
       }
+      if (result.status == 'fallback') {
+        await _showRecognitionNotice(
+          icon: Icons.recycling,
+          color: Colors.orange,
+          title: '已进入老旧机估价',
+          message: '未识别到可估价机型，请选择设备状态。',
+        );
+        if (mounted) await _showFallbackAppraisal();
+        return;
+      }
       if (result.status == 'ambiguous' && result.suggestion != null) {
         final brand = result.suggestion!['brand'] ?? '';
         final selectedModel = await _chooseRecognizedModel(
@@ -425,6 +435,77 @@ class _CaptureScreenState extends State<CaptureScreen> {
       if (mounted) await showAppMessage(context, title: '估价失败', message: '请检查网络后重试。', icon: Icons.error_outline, color: Colors.red);
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _showFallbackAppraisal() async {
+    const states = <String, String>{
+      'working': '可开机，基本功能正常',
+      'working_faulty': '可开机，但碎屏或有明显故障',
+      'no_power': '无法开机，外观基本完整',
+      'severe_damage': '严重破损、进水或拆修',
+    };
+    String? selected;
+    final state = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('选择旧机状态', textAlign: TextAlign.center),
+          content: RadioGroup<String>(
+            groupValue: selected,
+            onChanged: (value) => setDialogState(() => selected = value),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: states.entries
+                  .map(
+                    (entry) => RadioListTile<String>(
+                      value: entry.key,
+                      title: Text(entry.value),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed:
+                  selected == null ? null : () => Navigator.pop(context, selected),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('确定'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (state == null || !mounted) return;
+    try {
+      final result = await widget.apiClient.fallbackAppraise(state);
+      if (!mounted) return;
+      await showAppMessage(
+        context,
+        title: '老旧机兜底估价',
+        message:
+            '回收参考价：¥${result.mid.toStringAsFixed(0)}\n价格范围：¥${result.min.toStringAsFixed(0)} - ¥${result.max.toStringAsFixed(0)}',
+      );
+    } catch (_) {
+      if (mounted) {
+        await showAppMessage(
+          context,
+          title: '估价失败',
+          message: '请检查网络后重试。',
+          icon: Icons.error_outline,
+          color: Colors.red,
+        );
+      }
     }
   }
 
