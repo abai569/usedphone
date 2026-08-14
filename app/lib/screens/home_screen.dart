@@ -78,8 +78,8 @@ class _HomeScreenState extends State<HomeScreen> {
               width: double.infinity,
               child: Text(
               '激活状态：${_authorized ? '已授权' : '未授权'}\n'
-              '授权类型：${_licenseType == 'year' ? '年' : '月'}\n'
-              '有效期至：${_expiresAt?.substring(0, 10) ?? '-'}',
+              '授权类型：${_authorized ? (_licenseType == 'year' ? '年' : '月') : '-'}\n'
+              '有效期至：${_authorized ? (_expiresAt?.substring(0, 10) ?? '-') : '-'}',
               ),
             ),
             const SizedBox(height: 10),

@@ -685,7 +685,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                     children: [
                       Expanded(
                         child: _PhotoBox(
-                          label: '正面',
+                          label: '点击拍摄\n手机正面',
                           image: _frontImage,
                           onTap: _pickFront,
                         ),
@@ -693,7 +693,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: _PhotoBox(
-                          label: '背面',
+                          label: '点击拍摄\n手机背面',
                           image: _backImage,
                           onTap: _pickBack,
                         ),
@@ -704,7 +704,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                     const SizedBox(height: 16),
                   if (!widget.manualOnly && !widget.fallbackOnly)
                     _PhotoBox(
-                      label: '关于手机（可选，提高识别准确率）',
+                      label: '点击拍摄关于手机\n（可选，提高识别准确率）',
                       image: _settingsImage,
                       onTap: _pickSettings,
                     ),
@@ -913,7 +913,13 @@ class _PhotoBox extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 child: Image.file(image!, fit: BoxFit.cover),
               )
-            : Center(child: Text('点击拍摄手机$label', textAlign: TextAlign.center)),
+            : Center(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
       ),
     );
   }
