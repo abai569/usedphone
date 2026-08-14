@@ -137,6 +137,15 @@ class ApiClient {
     return AppraisalResult.fromJson(data['result']);
   }
 
+  Future<bool> unbind(String deviceKey) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/unbind'),
+      headers: {'Content-Type': 'application/json', ..._authHeaders},
+      body: jsonEncode({'device_key': deviceKey}),
+    );
+    return response.statusCode == 200;
+  }
+
   void close() {
     _client.close();
   }

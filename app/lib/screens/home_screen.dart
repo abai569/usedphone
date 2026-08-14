@@ -98,7 +98,46 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actionsAlignment: MainAxisAlignment.end,
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭')),
+          TextButton(
+            onPressed: () async {
+              if (!_authorized) {
+                Navigator.pop(context);
+                return;
+              }
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('清除授权'),
+                  content: const Text('确认清除本机授权并解绑设备？清除后需要重新输入激活码。'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+                    FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('确认清除')),
+                  ],
+                ),
+              );
+              if (confirmed != true || !context.mounted) return;
+              final prefs = await SharedPreferences.getInstance();
+              final deviceKey = prefs.getString('device_key') ?? '';
+              final licenseToken = prefs.getString('license_token');
+              if (licenseToken != null) {
+                widget.apiClient.setLicenseToken(licenseToken);
+                try {
+                  await widget.apiClient.unbind(deviceKey);
+                } catch (_) {}
+              }
+              await prefs.remove('license_token');
+              await prefs.remove('expires_at');
+              await prefs.remove('license_type');
+              await prefs.remove('device_key');
+              widget.apiClient.setLicenseToken(null);
+              if (!context.mounted) return;
+              Navigator.pop(context);
+              await _loadAuthorization();
+              if (!context.mounted) return;
+              await showAppMessage(context, title: '已清除', message: '本机授权已清除，可重新激活。');
+            },
+            child: Text(_authorized ? '清除授权' : '关闭'),
+          ),
           FilledButton(
             onPressed: () async {
               final code = controller.text.trim();
@@ -116,7 +155,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 final result = await widget.apiClient.activate(code, deviceKey);
                 if (!context.mounted) return;
                 if (!result.isActive || result.token == null || result.expiresAt == null) {
-                  await showAppMessage(context, title: '授权失败', message: '激活码无效或已过期。', icon: Icons.error_outline, color: Colors.red);
+                  String message = '激活码无效或已过期。';
+                  if (result.error == 'already_bound') {
+                    message = '该激活码已绑定其他设备，请先解绑或清除授权。';
+                  } else if (result.error == 'expired') {
+                    message = '激活码已过期。';
+                  }
+                  await showAppMessage(context, title: '授权失败', message: message, icon: Icons.error_outline, color: Colors.red);
                   return;
                 }
                 await prefs.setString('license_token', result.token!);
